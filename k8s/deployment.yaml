@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: network-security-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: network-security-api
+  template:
+    metadata:
+      labels:
+        app: network-security-api
+    spec:
+      containers:
+        - name: network-security-api
+          image: network-security-api:latest
+          ports:
+            - containerPort: 8000

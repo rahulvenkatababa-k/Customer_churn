@@ -1,0 +1,10 @@
+services:
+  network-security-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: network-security-api:latest
+    container_name: network-security-api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
