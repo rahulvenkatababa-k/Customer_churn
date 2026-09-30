@@ -28,5 +28,12 @@ class DataValidationConfig:
         self.validated_data_dir : str = os.path.join(self.data_validation_dir,
                                                      training_pipeline.DATA_VALIDATION_VALID_DIR_NAME)
         self.validation_report : str = os.path.join(self.data_validation_dir,training_pipeline.DATA_VALIDATION_REPORT_FILE_NAME)
-
+        self.validated_data_path : str = os.path.join(self.validated_data_dir, training_pipeline.DATA_VALIDATION_VALIDATED_DATAFRAME_NAME)
         
+class DataTransformationConfig:
+    def __init__(self, training_pipeline_config:TrainingPipelineConfig):
+        self.data_transformation_dir = os.path.join(training_pipeline_config.artifact_name,
+                                                    training_pipeline.DATA_TRANSFORMATION_DIR_NAME)
+        self.transformed_data_dir = os.path.join(self.data_transformation_dir,
+                                                 training_pipeline.DATA_TRANSFORMATION_TRANSFORMED_DIR_NAME)
+        self.transformed_data_path  = os.path.join( self.transformed_data_dir,training_pipeline.DATA_TRANSFORMATION_TRANSFORMED_DATAFRAME_NAME)

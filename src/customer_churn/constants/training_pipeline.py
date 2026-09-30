@@ -13,4 +13,13 @@ DATA_INGESTION_INGESTED_DIR_NAME = "ingested"
 
 DATA_VALIDATION_DIR_NAME = "data_validation"
 DATA_VALIDATION_VALID_DIR_NAME = "validated"
+DATA_VALIDATION_VALIDATED_DATAFRAME_NAME = "validated_customer_churn.csv"
 DATA_VALIDATION_REPORT_FILE_NAME = "validation_report.json"
+
+#data transformation stage related constants start with var name DATA_TRANSFORMATION
+
+DATA_TRANSFORMATION_DIR_NAME = "data_transformation"
+DATA_TRANSFORMATION_TRANSFORMED_DIR_NAME = "transformed"
+DATA_TRANSFORMATION_TRANSFORMED_DATAFRAME_NAME = "transformed_customer_churn.csv"
+
+

@@ -12,3 +12,8 @@ class DataValidationArtifact:
     validated_data_path: str | None
     validation_report_path: str
 
+@dataclass
+class DataTransformationArtifact:
+    transformed_data_path: str
+
+    

@@ -5,10 +5,14 @@ from src.customer_churn.exception.exception import CustomerChurnException
 from src.customer_churn.logging.logger import logger
 
 from src.customer_churn.entity.config_entity import (TrainingPipelineConfig, 
-                                                     DataIngestionConfig, DataValidationConfig)
-from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact,DataValidationArtifact)
+                                                     DataIngestionConfig, DataValidationConfig,
+                                                     DataTransformationConfig
+                                                     )
+from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact,DataValidationArtifact,
+                                                       DataTransformationArtifact)
 from src.customer_churn.components.data_ingestion import DataIngestion
 from src.customer_churn.components.data_validation import DataValidation
+from src.customer_churn.components.data_transformation import DataTransformation
 
 
 class TrainingPipeline:
@@ -38,6 +42,18 @@ class TrainingPipeline:
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Training Pipeline", "start data validation") from e
+
+    def start_data_transformation(self, data_validation_artifact:DataValidationArtifact) -> DataTransformationArtifact:
+        try:
+            data_transformation_config = DataTransformationConfig(training_pipeline_config=self.training_pipeline_config)
+            data_transformation = DataTransformation(data_transformation_config=data_transformation_config,
+                                                     data_validation_artifact=data_validation_artifact)
+            data_transformation_artifact = data_transformation.initiate_data_transformation()
+
+            return data_transformation_artifact
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(e,sys, "Training Pipeline", "start data transformation") from e
 
     def run_pipeline(self):
         try:
@@ -73,6 +89,21 @@ class TrainingPipeline:
                             f"Time: {stage_duration:.2f} seconds | "
                             f"Artifact: {data_validation_artifact}"
                             )
+
+            stage_start_time = time.perf_counter()
+            
+            logger.info(" Starting Data Transformation ")
+
+            data_transformation_artifact = self.start_data_transformation(data_validation_artifact=data_validation_artifact)
+
+            stage_duration = time.perf_counter() - stage_start_time
+
+
+            logger.info(
+                f" Data Transformation Completed | "
+                f"Time: {stage_duration:.2f} seconds | "
+                f"Artifact: {data_transformation_artifact}"
+                )
 
             total_duration = time.perf_counter() - pipeline_start_time
 

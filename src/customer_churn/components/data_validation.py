@@ -39,13 +39,14 @@ class DataValidation:
             raise CustomerChurnException(e,sys,"Data Validation","load data") from e
 
         return data
-    def _save_validated_dataframe(self, dataframe:pd.DataFrame, file_name: str) -> pd.DataFrame:
+    def _save_validated_dataframe(self, dataframe:pd.DataFrame) -> str:
         try:
             os.makedirs(self.data_validation_config.validated_data_dir, exist_ok=True)
-            file_path = os.path.join(self.data_validation_config.validated_data_dir, file_name)
+            file_path = self.data_validation_config.validated_data_path
             dataframe.to_csv(file_path, index=False)
 
             logger.info(f"validated dataframe save sucessfully at {file_path}")
+            
             return file_path
         except Exception as e:
             logger.error("%s", e)
@@ -79,10 +80,9 @@ class DataValidation:
             dataframe = self._load_data()
             validation_status, failure_cases = self._schema_validation(dataframe=dataframe)
             if validation_status:
-                valid_dataframe_file_path = self._save_validated_dataframe(dataframe=dataframe,
-                                                                       file_name="validated_customer_churn.csv")
+                valid_dataframe_file_path = self._save_validated_dataframe(dataframe=dataframe)
             else:
-                valid_dataframe_file_path = ""
+                valid_dataframe_file_path = None
             validation_report_file_path = self._generate_validation_report(
                 validation_status=validation_status,
                 failure_cases=failure_cases
