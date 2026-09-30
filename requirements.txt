@@ -24,4 +24,4 @@ catboost
 imblearn
 xgboost
 optuna
-
+ipykernel

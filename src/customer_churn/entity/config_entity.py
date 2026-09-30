@@ -20,3 +20,13 @@ class DataIngestionConfig:
 
         self.ingested_data_dir = os.path.join(self.data_ingestion_dir, 
                                               training_pipeline.DATA_INGESTION_INGESTED_DIR_NAME)
+
+class DataValidationConfig:
+    def __init__(self, training_pipeline_config:TrainingPipelineConfig):
+        self.data_validation_dir: str = os.path.join(training_pipeline_config.artifact_name,
+                                                     training_pipeline.DATA_VALIDATION_DIR_NAME)
+        self.validated_data_dir : str = os.path.join(self.data_validation_dir,
+                                                     training_pipeline.DATA_VALIDATION_VALID_DIR_NAME)
+        self.validation_report : str = os.path.join(self.data_validation_dir,training_pipeline.DATA_VALIDATION_REPORT_FILE_NAME)
+
+        
