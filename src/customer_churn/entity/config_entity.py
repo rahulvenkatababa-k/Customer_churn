@@ -37,3 +37,20 @@ class DataTransformationConfig:
         self.transformed_data_dir = os.path.join(self.data_transformation_dir,
                                                  training_pipeline.DATA_TRANSFORMATION_TRANSFORMED_DIR_NAME)
         self.transformed_data_path  = os.path.join( self.transformed_data_dir,training_pipeline.DATA_TRANSFORMATION_TRANSFORMED_DATAFRAME_NAME)
+
+class FeatureEngineeringConfig:
+    def __init__(self, training_pipeline_config:TrainingPipelineConfig):
+        self.feature_engineering_dir = os.path.join(training_pipeline_config.artifact_name,
+                                                    training_pipeline.FEATURE_ENGINEERING_DIR_NAME)
+        self.engineered_data_dir = os.path.join(self.feature_engineering_dir,
+                                                training_pipeline.FEATURE_ENGINEERING_ENGINEERED_DIR_NAME)
+        self.X_train_path = os.path.join(self.engineered_data_dir,
+                                              training_pipeline.FEATURE_ENGINEERING_X_TRAIN_FILE_NAME)
+        self.y_train_path = os.path.join(self.engineered_data_dir,
+                                                      training_pipeline.FEATURE_ENGINEERING_Y_TRAIN_FILE_NAME)
+        self.X_test_path = os.path.join(self.engineered_data_dir,
+                                                      training_pipeline.FEATURE_ENGINEERING_X_TEST_FILE_NAME)
+        self.y_test_path = os.path.join(self.engineered_data_dir,
+                                                      training_pipeline.FEATURE_ENGINEERING_Y_TEST_FILE_NAME)
+        self.preprocessor_file_path = os.path.join(self.engineered_data_dir,
+                                                   training_pipeline.FEATURE_ENGINEERING_PREPROCESSOR_FILE_NAME)

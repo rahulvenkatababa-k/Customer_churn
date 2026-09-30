@@ -6,13 +6,14 @@ from src.customer_churn.logging.logger import logger
 
 from src.customer_churn.entity.config_entity import (TrainingPipelineConfig, 
                                                      DataIngestionConfig, DataValidationConfig,
-                                                     DataTransformationConfig
+                                                     DataTransformationConfig, FeatureEngineeringConfig
                                                      )
 from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact,DataValidationArtifact,
-                                                       DataTransformationArtifact)
+                                                       DataTransformationArtifact,FeatureEngineeringArtifact)
 from src.customer_churn.components.data_ingestion import DataIngestion
 from src.customer_churn.components.data_validation import DataValidation
 from src.customer_churn.components.data_transformation import DataTransformation
+from src.customer_churn.components.feature_engineering import FeatureEngineering
 
 
 class TrainingPipeline:
@@ -54,6 +55,23 @@ class TrainingPipeline:
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Training Pipeline", "start data transformation") from e
+
+
+    def start_feature_engineering(self, 
+                                  data_transformation_artifact: DataTransformationArtifact) -> FeatureEngineeringArtifact:
+        try:
+            feature_engineering_config = FeatureEngineeringConfig(training_pipeline_config=self.training_pipeline_config)
+
+            feature_engineering = FeatureEngineering(data_transformation_artifact=data_transformation_artifact, 
+                                                     feature_engineering_config=feature_engineering_config,)
+
+            feature_engineering_artifact = (feature_engineering.initiate_feature_engineering())
+
+            return feature_engineering_artifact
+
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(e,sys,"Training Pipeline","start feature engineering",) from e
 
     def run_pipeline(self):
         try:
@@ -103,6 +121,21 @@ class TrainingPipeline:
                 f" Data Transformation Completed | "
                 f"Time: {stage_duration:.2f} seconds | "
                 f"Artifact: {data_transformation_artifact}"
+                )
+
+            stage_start_time = time.perf_counter()
+                        
+            logger.info(" Starting Feature Engineering ")
+            
+            feature_engineering_artifact = self.start_feature_engineering(data_transformation_artifact=data_transformation_artifact)
+
+            stage_duration = time.perf_counter() - stage_start_time
+            
+            
+            logger.info(
+                f" Feature Engineering Completed | "
+                f"Time: {stage_duration:.2f} seconds | "
+                f"Artifact: {feature_engineering_artifact}"
                 )
 
             total_duration = time.perf_counter() - pipeline_start_time
