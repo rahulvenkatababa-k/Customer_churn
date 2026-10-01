@@ -6,14 +6,17 @@ from src.customer_churn.logging.logger import logger
 
 from src.customer_churn.entity.config_entity import (TrainingPipelineConfig, 
                                                      DataIngestionConfig, DataValidationConfig,
-                                                     DataTransformationConfig, FeatureEngineeringConfig
+                                                     DataTransformationConfig, FeatureEngineeringConfig,
+                                                     ModelTrainerConfig
                                                      )
 from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact,DataValidationArtifact,
-                                                       DataTransformationArtifact,FeatureEngineeringArtifact)
+                                                       DataTransformationArtifact,FeatureEngineeringArtifact,
+                                                       ModelTrainerArtifact)
 from src.customer_churn.components.data_ingestion import DataIngestion
 from src.customer_churn.components.data_validation import DataValidation
 from src.customer_churn.components.data_transformation import DataTransformation
 from src.customer_churn.components.feature_engineering import FeatureEngineering
+from src.customer_churn.components.model_trainer import ModelTrainer
 
 
 class TrainingPipeline:
@@ -72,6 +75,19 @@ class TrainingPipeline:
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys,"Training Pipeline","start feature engineering",) from e
+
+    def start_model_trainer(self, 
+                            feature_engineering_artifact: FeatureEngineeringArtifact) -> ModelTrainerArtifact:
+        try:
+            model_trainer_config = ModelTrainerConfig(training_pipeline_config=self.training_pipeline_config)
+            model_trainer = ModelTrainer(feature_engineering_artifact=feature_engineering_artifact,
+                                         model_trainer_config=model_trainer_config)
+            model_trainer_artifact = model_trainer.initiate_model_trainer()
+
+            return model_trainer_artifact
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(e,sys, "Training Pipeline", " start model trainer") from e
 
     def run_pipeline(self):
         try:
@@ -137,6 +153,33 @@ class TrainingPipeline:
                 f"Time: {stage_duration:.2f} seconds | "
                 f"Artifact: {feature_engineering_artifact}"
                 )
+
+            stage_start_time = time.perf_counter()
+                                    
+            logger.info(" Starting Model Training ")
+            
+            model_trainer_artifact = self.start_model_trainer(feature_engineering_artifact=feature_engineering_artifact)
+
+            stage_duration = time.perf_counter() - stage_start_time
+            
+            
+            logger.info(
+                f" Model Training Completed | "
+                f"Time: {stage_duration:.2f} seconds | "
+                f"Artifact: {model_trainer_artifact}"
+                )
+
+
+
+
+
+
+
+
+
+
+
+
 
             total_duration = time.perf_counter() - pipeline_start_time
 

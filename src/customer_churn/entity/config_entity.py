@@ -11,6 +11,7 @@ class TrainingPipelineConfig:
         self.artifact_name = os.path.join(self.artifact_dir, timestamp)
 
         self.timestamp = timestamp
+        self.random_state = training_pipeline.RANDOM_STATE
 
 class DataIngestionConfig:
     def __init__(self, training_pipeline_config:TrainingPipelineConfig):
@@ -54,3 +55,14 @@ class FeatureEngineeringConfig:
                                                       training_pipeline.FEATURE_ENGINEERING_Y_TEST_FILE_NAME)
         self.preprocessor_file_path = os.path.join(self.engineered_data_dir,
                                                    training_pipeline.FEATURE_ENGINEERING_PREPROCESSOR_FILE_NAME)
+
+class ModelTrainerConfig:
+    def __init__(self, training_pipeline_config:TrainingPipelineConfig):
+        self.model_trainer_dir = os.path.join(training_pipeline_config.artifact_name,
+                                              training_pipeline.MODEL_TRAINER_DIR_NAME)
+        self.trained_model_dir = os.path.join(self.model_trainer_dir,
+                                              training_pipeline.MODEL_TRAINER_TRAINED_MODEL_DIR_NAME)
+        self.model_path = os.path.join(self.trained_model_dir,
+                                       training_pipeline.MODEL_TRAINER_FILE_NAME)
+        self.random_state = training_pipeline_config.random_state
+        

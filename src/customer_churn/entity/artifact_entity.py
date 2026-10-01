@@ -23,3 +23,7 @@ class FeatureEngineeringArtifact:
     X_test_path: str
     y_test_path: str
     preprocessor_file_path: str
+
+@dataclass
+class ModelTrainerArtifact:
+    model_path : str

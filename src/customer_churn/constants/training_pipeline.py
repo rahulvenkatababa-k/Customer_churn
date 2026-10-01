@@ -2,7 +2,7 @@
 
 PIPELINE_NAME = "customer_churn"
 ARTIFACTS_DIR_NAME = 'artifacts'
-
+RANDOM_STATE = 42
 
 #data ingestion stage related constants start with var name DATA_INGESTION
 
@@ -31,3 +31,10 @@ FEATURE_ENGINEERING_X_TRAIN_FILE_NAME = "X_train.csv"
 FEATURE_ENGINEERING_X_TEST_FILE_NAME = "X_test.csv"
 FEATURE_ENGINEERING_Y_TRAIN_FILE_NAME = "y_train.csv"
 FEATURE_ENGINEERING_Y_TEST_FILE_NAME = "y_test.csv"
+
+#Model Trainer stage related constants start with var name MODEL_TRAINER
+
+MODEL_TRAINER_DIR_NAME = "model_trainer"
+MODEL_TRAINER_TRAINED_MODEL_DIR_NAME = "trained_model"
+MODEL_TRAINER_FILE_NAME = "model.pkl"
+
