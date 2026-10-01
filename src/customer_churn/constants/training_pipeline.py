@@ -38,3 +38,9 @@ MODEL_TRAINER_DIR_NAME = "model_trainer"
 MODEL_TRAINER_TRAINED_MODEL_DIR_NAME = "trained_model"
 MODEL_TRAINER_FILE_NAME = "model.pkl"
 
+#Model Evaluation stage related constants start with var name MODEL_EVALUATION
+
+MODEL_EVALUATION_DIR_NAME = "model_evaluation"
+MODEL_EVALUATION_REPORT_FILE_NAME = "evaluation_report.json"
+MODEL_EVALUATION_CONFUSION_MATRIX_FILE_NAME = "confusion_matrix.png"
+

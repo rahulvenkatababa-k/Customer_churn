@@ -65,4 +65,15 @@ class ModelTrainerConfig:
         self.model_path = os.path.join(self.trained_model_dir,
                                        training_pipeline.MODEL_TRAINER_FILE_NAME)
         self.random_state = training_pipeline_config.random_state
+
+class ModelEvaluationConfig:
+    def __init__(self, training_pipeline_config: TrainingPipelineConfig):
+
+        self.model_evaluation_dir = os.path.join(training_pipeline_config.artifact_name,
+                                                 training_pipeline.MODEL_EVALUATION_DIR_NAME)
+        self.model_evaluation_report_path = os.path.join(self.model_evaluation_dir,
+                                                         training_pipeline.MODEL_EVALUATION_REPORT_FILE_NAME)
+        self.model_evaluation_confusion_matrix_path = os.path.join(self.model_evaluation_dir,
+                                                                   training_pipeline.MODEL_EVALUATION_CONFUSION_MATRIX_FILE_NAME)
+        
         

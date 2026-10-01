@@ -27,3 +27,8 @@ class FeatureEngineeringArtifact:
 @dataclass
 class ModelTrainerArtifact:
     model_path : str
+
+@dataclass
+class ModelEvaluationArtifact:
+    evaluation_report_file_path: str
+    confusion_matrix_file_path : str
