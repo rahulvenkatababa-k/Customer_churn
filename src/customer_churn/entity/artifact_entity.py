@@ -26,7 +26,8 @@ class FeatureEngineeringArtifact:
 
 @dataclass
 class ModelTrainerArtifact:
-    model_path : str
+    baseline_model_path: str
+    candidate_model_paths: dict[str, str]
 
 @dataclass
 class ModelEvaluationArtifact:

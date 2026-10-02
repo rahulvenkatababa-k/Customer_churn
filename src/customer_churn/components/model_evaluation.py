@@ -19,16 +19,21 @@ class ModelEvaluation:
     def _load_data(self):
         try:
             X_test = read_csv(self.feature_engineering_artifact.X_test_path)
-            y_test = read_csv(self.feature_engineering_artifact.y_test_path)
-            y_test = y_test.squeeze()
 
-            model = load_object(self.model_trainer_artifact.model_path)
+            y_test = read_csv(self.feature_engineering_artifact.y_test_path).squeeze()
 
-            return X_test, y_test, model
-        
+            baseline_model = load_object(self.model_trainer_artifact.baseline_model_path)
+
+            candidate_models = {}
+
+            for model_name, model_path in (self.model_trainer_artifact.candidate_model_paths.items()):
+                candidate_models[model_name] = load_object(model_path)
+
+            return X_test, y_test, baseline_model, candidate_models
+
         except Exception as e:
             logger.error("%s", e)
-            raise CustomerChurnException(e,sys, "Model Evaluation", "load data") from e
+            raise CustomerChurnException(e, sys, "Model Evaluation", "load data") from e
 
     def _make_predictions(self, model, X_test):
         try:
@@ -97,17 +102,64 @@ class ModelEvaluation:
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e, sys, "Model Evaluation", "save confusion matrix") from e
-    def initiate_model_evaluation(self) -> ModelEvaluationArtifact:
+    def initiate_model_evaluation(self):
         try:
-            X_test, y_test, model = self._load_data()
-            y_pred, y_pred_proba = self._make_predictions(model=model, X_test=X_test)
-            report, cm = self._calculate_metrics(y_pred_proba=y_pred_proba,
-                                                 y_pred=y_pred,
-                                                 y_test=y_test)
-            save_report = self._save_evaluation_report(report=report)
-            save_cm = self._save_confusion_matrix(cm=cm)
-            model_evaluation_artifact = ModelEvaluationArtifact(save_report, save_cm)
-            return model_evaluation_artifact
+            (
+                X_test,
+                y_test,
+                baseline_model,
+                candidate_models,
+            ) = self._load_data()
+
+            evaluation_report = {}
+            confusion_matrices = {}
+
+            # Evaluate baseline
+            y_pred, y_pred_proba = self._make_predictions(
+                model=baseline_model,
+                X_test=X_test,
+            )
+
+            report, cm = self._calculate_metrics(
+                y_pred_proba=y_pred_proba,
+                y_pred=y_pred,
+                y_test=y_test,
+            )
+
+            evaluation_report["baseline"] = report
+            confusion_matrices["baseline"] = cm
+
+            # Evaluate candidate models
+            for model_name, model in candidate_models.items():
+
+                y_pred, y_pred_proba = self._make_predictions(
+                    model=model,
+                    X_test=X_test,
+                )
+
+                report, cm = self._calculate_metrics(
+                    y_pred_proba=y_pred_proba,
+                    y_pred=y_pred,
+                    y_test=y_test,
+                )
+
+                evaluation_report[model_name] = report
+                confusion_matrices[model_name] = cm
+
+            save_report = self._save_evaluation_report(
+                report=evaluation_report
+            )
+
+            # For now, save the confusion matrix for each model
+            save_cm = self._save_confusion_matrix(
+                confusion_matrices=confusion_matrices
+            )
+
+            return ModelEvaluationArtifact(
+                save_report,
+                save_cm,
+            )
+
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Model Evaluation", "initiate model evaluation") from e
