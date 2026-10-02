@@ -7,16 +7,17 @@ from src.customer_churn.logging.logger import logger
 from src.customer_churn.entity.config_entity import (TrainingPipelineConfig, 
                                                      DataIngestionConfig, DataValidationConfig,
                                                      DataTransformationConfig, FeatureEngineeringConfig,
-                                                     ModelTrainerConfig
+                                                     ModelTrainerConfig, ModelEvaluationConfig
                                                      )
 from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact,DataValidationArtifact,
                                                        DataTransformationArtifact,FeatureEngineeringArtifact,
-                                                       ModelTrainerArtifact)
+                                                       ModelTrainerArtifact, ModelEvaluationArtifact)
 from src.customer_churn.components.data_ingestion import DataIngestion
 from src.customer_churn.components.data_validation import DataValidation
 from src.customer_churn.components.data_transformation import DataTransformation
 from src.customer_churn.components.feature_engineering import FeatureEngineering
 from src.customer_churn.components.model_trainer import ModelTrainer
+from src.customer_churn.components.model_evaluation import ModelEvaluation
 
 
 class TrainingPipeline:
@@ -89,11 +90,29 @@ class TrainingPipeline:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Training Pipeline", " start model trainer") from e
 
+    def start_model_evaluation(self,
+                               model_trainer_artifact:ModelTrainerArtifact,
+                               feature_engineering_artifact:FeatureEngineeringArtifact) ->ModelEvaluationArtifact:
+        try:
+            model_evaluation_config = ModelEvaluationConfig(training_pipeline_config=self.training_pipeline_config)
+            model_evaluation = ModelEvaluation(model_evaluation_config=model_evaluation_config,
+                                               model_trainer_artifact=model_trainer_artifact,
+                                               feature_engineering_artifact=feature_engineering_artifact)
+
+            model_evaluation_artifact = model_evaluation.initiate_model_evaluation()
+
+            return model_evaluation_artifact
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(e,sys, "Training Pipeline", "start model evaluation") from e
+
     def run_pipeline(self):
         try:
             pipeline_start_time = time.perf_counter()
 
             logger.info("--- Training Pipeline Started ---")
+
+            logger.info("-----------------------------------------------------------------------------")
 
             stage_start_time = time.perf_counter()
 
@@ -110,6 +129,8 @@ class TrainingPipeline:
                 f"Artifact: {data_ingestion_artifact}"
                 )
 
+            logger.info("-----------------------------------------------------------------------------")
+
             stage_start_time = time.perf_counter()
             
             logger.info(" Starting Data Validation ")
@@ -123,6 +144,7 @@ class TrainingPipeline:
                             f"Time: {stage_duration:.2f} seconds | "
                             f"Artifact: {data_validation_artifact}"
                             )
+            logger.info("-----------------------------------------------------------------------------")
 
             stage_start_time = time.perf_counter()
             
@@ -138,6 +160,7 @@ class TrainingPipeline:
                 f"Time: {stage_duration:.2f} seconds | "
                 f"Artifact: {data_transformation_artifact}"
                 )
+            logger.info("-----------------------------------------------------------------------------")
 
             stage_start_time = time.perf_counter()
                         
@@ -153,6 +176,7 @@ class TrainingPipeline:
                 f"Time: {stage_duration:.2f} seconds | "
                 f"Artifact: {feature_engineering_artifact}"
                 )
+            logger.info("-----------------------------------------------------------------------------")
 
             stage_start_time = time.perf_counter()
                                     
@@ -168,7 +192,25 @@ class TrainingPipeline:
                 f"Time: {stage_duration:.2f} seconds | "
                 f"Artifact: {model_trainer_artifact}"
                 )
+            logger.info("-----------------------------------------------------------------------------")
 
+            stage_start_time = time.perf_counter()
+                                                
+            logger.info(" Starting Model Evaluation ")
+            
+            model_evaluation_artifact = self.start_model_evaluation(model_trainer_artifact=model_trainer_artifact,
+                                                                 feature_engineering_artifact=feature_engineering_artifact)
+
+            stage_duration = time.perf_counter() - stage_start_time
+            
+            
+            logger.info(
+                f" Model Evaluation Completed | "
+                f"Time: {stage_duration:.2f} seconds | "
+                f"Artifact: {model_evaluation_artifact}"
+                )
+            logger.info("-----------------------------------------------------------------------------")
+            
 
 
 

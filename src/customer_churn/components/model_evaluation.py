@@ -1,10 +1,12 @@
 import sys
-
 from src.customer_churn.entity.config_entity import ModelEvaluationConfig
 from src.customer_churn.entity.artifact_entity import ModelTrainerArtifact, ModelEvaluationArtifact, FeatureEngineeringArtifact
-from src.customer_churn.utils.utils import load_object, save_object, read_csv
+from src.customer_churn.utils.utils import load_object, read_csv, save_json, save_confusion_matrix
 from src.customer_churn.logging.logger import logger
 from src.customer_churn.exception.exception import CustomerChurnException
+
+from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_score,
+                             roc_auc_score,average_precision_score, confusion_matrix)
 
 class ModelEvaluation:
     def __init__(self, model_trainer_artifact: ModelTrainerArtifact,
@@ -28,16 +30,84 @@ class ModelEvaluation:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Model Evaluation", "load data") from e
 
-    def _make_predections(self, model, X_test):
+    def _make_predictions(self, model, X_test):
         try:
             y_pred = model.predict(X_test)
+            y_pred_proba = model.predict_proba(X_test)[:,1]
+
+            return y_pred, y_pred_proba
         except Exception as e:
             logger.error("%s", e)
-            raise CustomerChurnException(e,sys, "Model Trainer", "") from e
+            raise CustomerChurnException(e,sys, "Model Evaluation", "make predictions") from e
 
-    def initiate_model_evaluation(self):
+    def _calculate_metrics(self, y_test, y_pred, y_pred_proba):
         try:
-            pass
+
+            accuracy = accuracy_score(y_true=y_test, y_pred=y_pred)
+            precision = precision_score(y_true=y_test, y_pred=y_pred)
+            recall = recall_score(y_true=y_test, y_pred=y_pred)
+            f1 = f1_score(y_true=y_test, y_pred=y_pred)
+            roc_auc = roc_auc_score(y_true=y_test, y_score=y_pred_proba)
+            average_precision = average_precision_score(y_true=y_test,y_score=y_pred_proba)
+
+            cm = confusion_matrix(y_true=y_test, y_pred=y_pred)
+
+            report = {
+                "accuracy" : float(accuracy),
+                "precision" : float(precision),
+                "recall" : float(recall),
+                "f1" : float(f1),
+                "roc_auc" : float(roc_auc),
+                "average_precision" : float(average_precision)
+            }
+
+            print (report)
+            logger.info(report)
+            print(cm)
+            logger.info(cm)
+
+            return report, cm
+
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(e,sys, "Model Evaluation", "calculate metrics") from e
+
+    def _save_evaluation_report(self, report) :
+        try:
+            save_json(obj=report, file_path= self.model_evaluation_config.model_evaluation_report_path, indent = 4)
+
+            return self.model_evaluation_config.model_evaluation_report_path
+
+        except Exception as e:
+            logger.error("%s",e)
+            raise CustomerChurnException(e,sys, "Model Evaluation" , "save evaluation model") from e
+
+    def _save_confusion_matrix(self, cm):
+        try:
+            save_confusion_matrix(confusion_matrix=cm,
+                                  file_path= self.model_evaluation_config.model_evaluation_confusion_matrix_path,
+                                  display_labels=["No Churn", "Churn"],
+                                  title="Customer Churn Confusion matrix",
+                                  dpi = 300,
+                                  bbox_inches = "tight"
+                                  )
+
+            return self.model_evaluation_config.model_evaluation_confusion_matrix_path
+        
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(e, sys, "Model Evaluation", "save confusion matrix") from e
+    def initiate_model_evaluation(self) -> ModelEvaluationArtifact:
+        try:
+            X_test, y_test, model = self._load_data()
+            y_pred, y_pred_proba = self._make_predictions(model=model, X_test=X_test)
+            report, cm = self._calculate_metrics(y_pred_proba=y_pred_proba,
+                                                 y_pred=y_pred,
+                                                 y_test=y_test)
+            save_report = self._save_evaluation_report(report=report)
+            save_cm = self._save_confusion_matrix(cm=cm)
+            model_evaluation_artifact = ModelEvaluationArtifact(save_report, save_cm)
+            return model_evaluation_artifact
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Model Evaluation", "initiate model evaluation") from e
