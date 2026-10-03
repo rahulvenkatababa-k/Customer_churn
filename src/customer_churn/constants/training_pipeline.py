@@ -42,5 +42,5 @@ MODEL_TRAINER_FILE_NAME = "model.pkl"
 
 MODEL_EVALUATION_DIR_NAME = "model_evaluation"
 MODEL_EVALUATION_REPORT_FILE_NAME = "evaluation_report.json"
-MODEL_EVALUATION_CONFUSION_MATRIX_FILE_NAME = "confusion_matrix.png"
+MODEL_EVALUATION_CONFUSION_MATRIX_DIR_NAME = "confusion_matrices"
 

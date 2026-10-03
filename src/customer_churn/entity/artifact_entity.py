@@ -28,8 +28,9 @@ class FeatureEngineeringArtifact:
 class ModelTrainerArtifact:
     baseline_model_path: str
     candidate_model_paths: dict[str, str]
+    experiment_results_path: str
 
 @dataclass
 class ModelEvaluationArtifact:
     evaluation_report_file_path: str
-    confusion_matrix_file_path : str
+    confusion_matrix_file_paths : dict[str, str]

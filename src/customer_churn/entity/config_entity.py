@@ -73,7 +73,7 @@ class ModelEvaluationConfig:
                                                  training_pipeline.MODEL_EVALUATION_DIR_NAME)
         self.model_evaluation_report_path = os.path.join(self.model_evaluation_dir,
                                                          training_pipeline.MODEL_EVALUATION_REPORT_FILE_NAME)
-        self.model_evaluation_confusion_matrix_path = os.path.join(self.model_evaluation_dir,
-                                                                   training_pipeline.MODEL_EVALUATION_CONFUSION_MATRIX_FILE_NAME)
+        self.model_evaluation_confusion_matrix_dir = os.path.join(self.model_evaluation_dir,
+                                                                   training_pipeline.MODEL_EVALUATION_CONFUSION_MATRIX_DIR_NAME)
         
         
