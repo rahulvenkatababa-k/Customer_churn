@@ -1,9 +1,10 @@
 import os
 import sys
 import json
-
+import mlflow
 import pandas as pd
 
+from src.customer_churn.utils.ml_utils import (log_metrics, log_parameters)
 from src.customer_churn.entity.config_entity import ModelEvaluationConfig
 from src.customer_churn.entity.artifact_entity import ModelTrainerArtifact, ModelEvaluationArtifact, FeatureEngineeringArtifact
 from src.customer_churn.utils.utils import load_object, read_csv, save_json, save_confusion_matrix
@@ -247,6 +248,16 @@ class ModelEvaluation:
 
             selected_model = models[selected_model_name]
 
+
+            log_parameters({
+                "selected_model": selected_model_name,
+                "selection_metric" : "f1"
+            })
+            log_metrics({
+                f"validation_{metric}" : float(value)
+                for metric, value in validation_report[selected_model_name].items()
+            })
+
             logger.info(
                 "Selected model: %s | Validation F1: %.4f",
                 selected_model_name,
@@ -265,6 +276,10 @@ class ModelEvaluation:
                 y_test=y_test,
                 model_name=f"final_test_{selected_model_name}",
             )
+            log_metrics({
+                    f"test_{metric}": float(value)
+                    for metric, value in test_report.items()
+                })
 
             confusion_matrices[
                 f"final_test_{selected_model_name}"

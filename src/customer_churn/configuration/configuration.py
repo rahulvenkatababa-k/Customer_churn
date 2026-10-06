@@ -15,6 +15,8 @@ class Configuration:
             "POSTGRES_SQL_URI"
         )
         self.model_name = self._get_required_value("MODEL_NAME")
+        self.mlflow_tracking_uri = self._get_required_value("MLFLOW_TRACKING_URI")
+        self.mlflow_experiment_name = self._get_required_value("MLFLOW_EXPERIMENT_NAME")
 
     @staticmethod
     def _get_required_value(variable_name):

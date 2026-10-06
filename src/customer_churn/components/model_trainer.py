@@ -1,9 +1,13 @@
 import os
 import sys
 import optuna
+import mlflow
+
 from src.customer_churn.logging.logger import logger
 from src.customer_churn.exception.exception import CustomerChurnException
+
 from src.customer_churn.utils.utils import read_csv, save_object, save_json
+from src.customer_churn.utils.ml_utils import (log_parameters, log_metrics)
 from src.customer_churn.entity.artifact_entity import (
     FeatureEngineeringArtifact,
     ModelTrainerArtifact,
@@ -196,6 +200,19 @@ class ModelTrainer:
             raise CustomerChurnException(
                 e, sys, "Model Trainer", "candidate models"
             ) from e
+
+    def _log_sear_experiments(self, experiment_name, result) :
+        with mlflow.start_run(
+            run_name=experiment_name,
+            nested=True
+        ):
+            log_parameters({
+                "experiment_name" : experiment_name,
+                **result["best_params"]
+            })
+            log_metrics({
+                "cv_f1" : result["best_score"]
+            })
 
     def _run_hyperparameter_experiments(self, X_train, y_train):
         try:
@@ -428,6 +445,10 @@ class ModelTrainer:
                 catboost_search.best_params_
             )
 
+            for experiment_name, result in experiment_results.items():
+                self._log_sear_experiments(experiment_name=experiment_name,
+                                           result=result)
+
             return experiment_results
 
         except Exception as e:
@@ -615,6 +636,11 @@ class ModelTrainer:
                 smote_study.best_params
             )
 
+            for experiment_name, result in optuna_results.items():
+                self._log_sear_experiments(
+                    experiment_name=f"{experiment_name}_optuna", result=result
+                )
+
             return optuna_results
 
         except Exception as e:
@@ -740,6 +766,10 @@ class ModelTrainer:
                 experiment_results[f"{name}_optuna"] = result
 
             # Save experiment results
+            for experiment_name, result in experiment_results.items():
+                mlflow.log_metric(
+                    f"{experiment_name}_cv_f1" , float(result["best_score"])
+                )
             experiment_results_path = self._save_experiment_results(
                 experiment_results=experiment_results,
             )

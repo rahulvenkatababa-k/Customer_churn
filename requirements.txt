@@ -25,3 +25,5 @@ imblearn
 xgboost
 optuna
 ipykernel
+certifi
+truststore

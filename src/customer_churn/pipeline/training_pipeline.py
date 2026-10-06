@@ -1,9 +1,11 @@
 import sys
 import time
+import mlflow
 
 from src.customer_churn.exception.exception import CustomerChurnException
 from src.customer_churn.logging.logger import logger
-
+from src.customer_churn.utils.ml_utils import (configure_mlflow,log_parameters, log_pipeline_duration)
+from src.customer_churn.configuration.configuration import config
 from src.customer_churn.entity.config_entity import (TrainingPipelineConfig, 
                                                      DataIngestionConfig, DataValidationConfig,
                                                      DataTransformationConfig, FeatureEngineeringConfig,
@@ -106,133 +108,140 @@ class TrainingPipeline:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Training Pipeline", "start model evaluation") from e
 
+    def _execute_pipeline_stages(self):
+    
+        pipeline_start_time = time.perf_counter()
+
+        logger.info("--- Training Pipeline Started ---")
+
+        logger.info("-----------------------------------------------------------------------------")
+
+        stage_start_time = time.perf_counter()
+
+        logger.info(" Starting Data Ingestion ")
+
+        data_ingestion_artifact = self.start_data_ingestion()
+
+        stage_duration = time.perf_counter() - stage_start_time
+
+
+        logger.info(
+            f" Data Ingestion Completed | "
+            f"Time: {stage_duration:.2f} seconds | "
+            f"Artifact: {data_ingestion_artifact}"
+            )
+
+        logger.info("-----------------------------------------------------------------------------")
+
+        stage_start_time = time.perf_counter()
+        
+        logger.info(" Starting Data Validation ")
+
+        data_validation_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
+
+        stage_duration = time.perf_counter() - stage_start_time
+
+        logger.info(
+                        f" Data Validation Completed | "
+                        f"Time: {stage_duration:.2f} seconds | "
+                        f"Artifact: {data_validation_artifact}"
+                        )
+        logger.info("-----------------------------------------------------------------------------")
+
+        stage_start_time = time.perf_counter()
+        
+        logger.info(" Starting Data Transformation ")
+
+        data_transformation_artifact = self.start_data_transformation(data_validation_artifact=data_validation_artifact)
+
+        stage_duration = time.perf_counter() - stage_start_time
+
+
+        logger.info(
+            f" Data Transformation Completed | "
+            f"Time: {stage_duration:.2f} seconds | "
+            f"Artifact: {data_transformation_artifact}"
+            )
+        logger.info("-----------------------------------------------------------------------------")
+
+        stage_start_time = time.perf_counter()
+                    
+        logger.info(" Starting Feature Engineering ")
+        
+        feature_engineering_artifact = self.start_feature_engineering(data_transformation_artifact=data_transformation_artifact)
+
+        stage_duration = time.perf_counter() - stage_start_time
+        
+        
+        logger.info(
+            f" Feature Engineering Completed | "
+            f"Time: {stage_duration:.2f} seconds | "
+            f"Artifact: {feature_engineering_artifact}"
+            )
+        logger.info("-----------------------------------------------------------------------------")
+
+        stage_start_time = time.perf_counter()
+                                
+        logger.info(" Starting Model Training ")
+        
+        model_trainer_artifact = self.start_model_trainer(feature_engineering_artifact=feature_engineering_artifact)
+
+        stage_duration = time.perf_counter() - stage_start_time
+        
+        
+        logger.info(
+            f" Model Training Completed | "
+            f"Time: {stage_duration:.2f} seconds | "
+            f"Artifact: {model_trainer_artifact}"
+            )
+        logger.info("-----------------------------------------------------------------------------")
+
+        stage_start_time = time.perf_counter()
+                                            
+        logger.info(" Starting Model Evaluation ")
+        
+        model_evaluation_artifact = self.start_model_evaluation(model_trainer_artifact=model_trainer_artifact,
+                                                                feature_engineering_artifact=feature_engineering_artifact)
+
+        stage_duration = time.perf_counter() - stage_start_time
+        
+        
+        logger.info(
+            f" Model Evaluation Completed | "
+            f"Time: {stage_duration:.2f} seconds | "
+            f"Artifact: {model_evaluation_artifact}"
+            )
+        logger.info("-----------------------------------------------------------------------------")
+        
+
+        total_duration = time.perf_counter() - pipeline_start_time
+
+        logger.info(
+            "========== TRAINING PIPELINE COMPLETED =========="
+        )
+
+        logger.info(
+            f"Total pipeline execution time: "
+            f"{total_duration:.2f} seconds"
+        )
+
+
     def run_pipeline(self):
         try:
-            pipeline_start_time = time.perf_counter()
 
-            logger.info("--- Training Pipeline Started ---")
+            configure_mlflow()
+            with mlflow.start_run(run_name="customer-churn-pipeline"):
+                log_parameters({
+                    "pipeline_name" : "customer_churn",
+                    "experiment_name" : config.mlflow_experiment_name
+                })
+                pipeline_start_time = time.perf_counter()
+                result = self._execute_pipeline_stages()
+                total_duration = time.perf_counter() - pipeline_start_time
+                log_pipeline_duration(total_duration)
+                return result
 
-            logger.info("-----------------------------------------------------------------------------")
-
-            stage_start_time = time.perf_counter()
-
-            logger.info(" Starting Data Ingestion ")
-
-            data_ingestion_artifact = self.start_data_ingestion()
-
-            stage_duration = time.perf_counter() - stage_start_time
-
-
-            logger.info(
-                f" Data Ingestion Completed | "
-                f"Time: {stage_duration:.2f} seconds | "
-                f"Artifact: {data_ingestion_artifact}"
-                )
-
-            logger.info("-----------------------------------------------------------------------------")
-
-            stage_start_time = time.perf_counter()
-            
-            logger.info(" Starting Data Validation ")
-
-            data_validation_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
-
-            stage_duration = time.perf_counter() - stage_start_time
-
-            logger.info(
-                            f" Data Validation Completed | "
-                            f"Time: {stage_duration:.2f} seconds | "
-                            f"Artifact: {data_validation_artifact}"
-                            )
-            logger.info("-----------------------------------------------------------------------------")
-
-            stage_start_time = time.perf_counter()
-            
-            logger.info(" Starting Data Transformation ")
-
-            data_transformation_artifact = self.start_data_transformation(data_validation_artifact=data_validation_artifact)
-
-            stage_duration = time.perf_counter() - stage_start_time
-
-
-            logger.info(
-                f" Data Transformation Completed | "
-                f"Time: {stage_duration:.2f} seconds | "
-                f"Artifact: {data_transformation_artifact}"
-                )
-            logger.info("-----------------------------------------------------------------------------")
-
-            stage_start_time = time.perf_counter()
-                        
-            logger.info(" Starting Feature Engineering ")
-            
-            feature_engineering_artifact = self.start_feature_engineering(data_transformation_artifact=data_transformation_artifact)
-
-            stage_duration = time.perf_counter() - stage_start_time
-            
-            
-            logger.info(
-                f" Feature Engineering Completed | "
-                f"Time: {stage_duration:.2f} seconds | "
-                f"Artifact: {feature_engineering_artifact}"
-                )
-            logger.info("-----------------------------------------------------------------------------")
-
-            stage_start_time = time.perf_counter()
-                                    
-            logger.info(" Starting Model Training ")
-            
-            model_trainer_artifact = self.start_model_trainer(feature_engineering_artifact=feature_engineering_artifact)
-
-            stage_duration = time.perf_counter() - stage_start_time
-            
-            
-            logger.info(
-                f" Model Training Completed | "
-                f"Time: {stage_duration:.2f} seconds | "
-                f"Artifact: {model_trainer_artifact}"
-                )
-            logger.info("-----------------------------------------------------------------------------")
-
-            stage_start_time = time.perf_counter()
-                                                
-            logger.info(" Starting Model Evaluation ")
-            
-            model_evaluation_artifact = self.start_model_evaluation(model_trainer_artifact=model_trainer_artifact,
-                                                                 feature_engineering_artifact=feature_engineering_artifact)
-
-            stage_duration = time.perf_counter() - stage_start_time
-            
-            
-            logger.info(
-                f" Model Evaluation Completed | "
-                f"Time: {stage_duration:.2f} seconds | "
-                f"Artifact: {model_evaluation_artifact}"
-                )
-            logger.info("-----------------------------------------------------------------------------")
-            
-
-
-
-
-
-
-
-
-
-
-
-
-            total_duration = time.perf_counter() - pipeline_start_time
-
-            logger.info(
-                "========== TRAINING PIPELINE COMPLETED =========="
-            )
-
-            logger.info(
-                f"Total pipeline execution time: "
-                f"{total_duration:.2f} seconds"
-            )
         except Exception as e:
-        
-            raise CustomerChurnException(e,sys, "Training Pipeline", "run pipeline") from e
+            logger.error("%s", e)
+            raise CustomerChurnException(e,sys, "Training Pipeline", "run pipeline")
+
