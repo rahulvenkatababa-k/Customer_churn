@@ -4,6 +4,9 @@ PIPELINE_NAME = "customer_churn"
 ARTIFACTS_DIR_NAME = 'artifacts'
 RANDOM_STATE = 42
 
+DATA_VERSIONED_DIR = "data/versioned"
+DATA_VERSIONED_DATASET_FILE_NAME = "customer_churn.csv"
+
 #data ingestion stage related constants start with var name DATA_INGESTION
 
 DATA_INGESTION_DIR_NAME = "data_ingestion"

@@ -212,22 +212,22 @@ class DataIngestion:
                 ingested_data_path,
                 index=False
             )
+            os.makedirs(self.data_ingestion_config.versioned_data_dir, exist_ok=True)
+            df.to_csv(self.data_ingestion_config.versioned_data_path, index=False)
 
-            if not os.path.isfile(ingested_data_path):
-                raise FileNotFoundError(
-                    f"Ingested file was not created: "
-                    f"{ingested_data_path}"
-                )
+            for file_path in (
+                ingested_data_path,
+                self.data_ingestion_config.versioned_data_path,
+            ):
+                if not os.path.isfile(file_path):
+                    raise FileNotFoundError(f"Dataset file was not created: {file_path}")
+                if os.path.getsize(file_path) == 0:
+                    raise ValueError(f"Dataset file is empty: {file_path}")
 
-            if os.path.getsize(ingested_data_path) == 0:
-                raise ValueError(
-                    f"Ingested file is empty: "
-                    f"{ingested_data_path}"
-                )
-
+            logger.info("Timestamped dataset saved to %s", ingested_data_path)
             logger.info(
-                "Ingested dataset saved to %s",
-                ingested_data_path
+                "Stable DVC dataset snapshot saved to %s",
+                self.data_ingestion_config.versioned_data_path,
             )
 
             artifact = DataIngestionArtifact(

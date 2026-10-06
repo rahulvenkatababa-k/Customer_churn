@@ -21,6 +21,11 @@ class DataIngestionConfig:
 
         self.ingested_data_dir = os.path.join(self.data_ingestion_dir, 
                                               training_pipeline.DATA_INGESTION_INGESTED_DIR_NAME)
+        self.versioned_data_dir = training_pipeline.DATA_VERSIONED_DIR
+        self.versioned_data_path = os.path.join(
+            self.versioned_data_dir,
+            training_pipeline.DATA_VERSIONED_DATASET_FILE_NAME
+        )
 
 class DataValidationConfig:
     def __init__(self, training_pipeline_config:TrainingPipelineConfig):
