@@ -15,10 +15,15 @@ from sklearn.ensemble import AdaBoostClassifier
 from xgboost import XGBClassifier
 from catboost import CatBoostClassifier
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_val_score
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, cross_val_score, cross_validate
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTEENN
+
+from sklearn.base import clone
+
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 
@@ -30,6 +35,35 @@ class ModelTrainer:
     ):
         self.feature_engineering_artifact = feature_engineering_artifact
         self.model_trainer_config = model_trainer_config
+
+    NUMERICAL_COLUMNS = ["tenure", "MonthlyCharges", "TotalCharges"]
+    BINARY_COLUMNS = ["SeniorCitizen"]
+
+    def _create_preprocessor(self, X_train):
+        numerical_columns = self.NUMERICAL_COLUMNS
+        binary_columns = self.BINARY_COLUMNS
+
+        categorical_columns = [
+            column for column in X_train.columns
+            if column not in numerical_columns + binary_columns
+        ]
+
+        return ColumnTransformer(
+            transformers=[
+                ("numerical", StandardScaler(), numerical_columns),
+                ("binary", "passthrough", binary_columns),
+                (
+                    "categorical",
+                    OneHotEncoder(
+                        handle_unknown="ignore",
+                        sparse_output=False,
+                    ),
+                    categorical_columns,
+                ),
+            ],
+            remainder="drop",
+            verbose_feature_names_out=False,
+        )
 
     def _load_data(self):
         try:
@@ -53,13 +87,18 @@ class ModelTrainer:
 
     def _baseline_model(self, X_train, y_train):
         try:
-            lg_reg = LogisticRegression(
-                random_state=self.model_trainer_config.random_state
-            )
+            model = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
+                (
+                    "model",
+                    LogisticRegression(
+                        random_state=self.model_trainer_config.random_state
+                    ),
+                ),
+            ])
 
-            lg_reg.fit(X_train, y_train)
-
-            return lg_reg
+            model.fit(X_train, y_train)
+            return model
 
         except Exception as e:
             logger.error("%s", e)
@@ -85,9 +124,10 @@ class ModelTrainer:
             models = {}
 
             # AdaBoost
-            ada_boost = AdaBoostClassifier(
-                random_state=self.model_trainer_config.random_state
-            )
+            ada_boost = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
+                ("model", AdaBoostClassifier(random_state=self.model_trainer_config.random_state),),
+            ])
 
             ada_boost.fit(X_train, y_train)
 
@@ -97,33 +137,53 @@ class ModelTrainer:
 
             sample_weights = self._calculate_sample_weights(y_train)
 
-            weighted_ada_boost = AdaBoostClassifier(
-                random_state=self.model_trainer_config.random_state
-            )
+            weighted_ada_boost = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
+                (
+                    "model",
+                    AdaBoostClassifier(
+                        random_state=self.model_trainer_config.random_state
+                    ),
+                ),
+            ])
 
             weighted_ada_boost.fit(
                 X_train,
                 y_train,
-                sample_weight=sample_weights
+                model__sample_weight=sample_weights,
             )
 
             models["adaboost_weighted"] = weighted_ada_boost
 
             # XGBoost
-            xgboost = XGBClassifier(
-                random_state=self.model_trainer_config.random_state,
-                eval_metric="logloss",
-            )
+            xgboost = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
+                (
+                    "model",XGBClassifier(
+                                    random_state=self.model_trainer_config.random_state,
+                                    eval_metric="logloss",
+                                )
+                )
+            ])
+            
+            
+            
+            
 
             xgboost.fit(X_train, y_train)
 
             models["xgboost"] = xgboost
 
             # CatBoost
-            catboost = CatBoostClassifier(
-                random_seed=self.model_trainer_config.random_state,
-                verbose=False,
-            )
+            catboost = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
+                ("model",CatBoostClassifier(
+                                random_seed=self.model_trainer_config.random_state,
+                                verbose=False,
+                            ))
+            ])
+            
+            
 
             catboost.fit(X_train, y_train)
 
@@ -152,6 +212,7 @@ class ModelTrainer:
             # ============================================================
 
             ada_smote_pipeline = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
                 ("smote", SMOTE(
                     random_state=self.model_trainer_config.random_state
                 )),
@@ -168,7 +229,7 @@ class ModelTrainer:
             ada_smote_search = GridSearchCV(
                 estimator=ada_smote_pipeline,
                 param_grid=ada_smote_grid,
-                scoring="recall",
+                scoring="f1",
                 cv=cv,
                 n_jobs=1,
                 verbose=1
@@ -183,7 +244,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "AdaBoost + SMOTE | CV Recall: %.4f | Params: %s",
+                "AdaBoost + SMOTE | CV f1: %.4f | Params: %s",
                 ada_smote_search.best_score_,
                 ada_smote_search.best_params_
             )
@@ -193,6 +254,7 @@ class ModelTrainer:
             # ============================================================
 
             ada_smoteenn_pipeline = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
                 ("smoteenn", SMOTEENN(
                     random_state=self.model_trainer_config.random_state
                 )),
@@ -209,7 +271,7 @@ class ModelTrainer:
             ada_smoteenn_search = GridSearchCV(
                 estimator=ada_smoteenn_pipeline,
                 param_grid=ada_smoteenn_grid,
-                scoring="recall",
+                scoring="f1",
                 cv=cv,
                 n_jobs=1,
                 verbose=1
@@ -224,7 +286,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "AdaBoost + SMOTEENN | CV Recall: %.4f | Params: %s",
+                "AdaBoost + SMOTEENN | CV f1: %.4f | Params: %s",
                 ada_smoteenn_search.best_score_,
                 ada_smoteenn_search.best_params_
             )
@@ -238,25 +300,25 @@ class ModelTrainer:
 
             scale_pos_weight = negative_count / positive_count
 
-            xgb_model = XGBClassifier(
-                random_state=self.model_trainer_config.random_state,
-                eval_metric="logloss"
-            )
+            xgb_model =Pipeline([ 
+
+                ("preprocessor", self._create_preprocessor(X_train)),
+                ("model", XGBClassifier(
+                    random_state=self.model_trainer_config.random_state,
+                    eval_metric="logloss"
+            ))])
 
             xgb_grid = {
-                "n_estimators": [100, 200],
-                "max_depth": [3, 5, 7],
-                "learning_rate": [0.05, 0.1],
-                "scale_pos_weight": [
-                    1,
-                    scale_pos_weight
-                ]
-            }
+                    "model__n_estimators": [100, 200],
+                    "model__max_depth": [3, 5, 7],
+                    "model__learning_rate": [0.05, 0.1],
+                    "model__scale_pos_weight": [1, scale_pos_weight],
+                }
 
             xgb_search = GridSearchCV(
                 estimator=xgb_model,
                 param_grid=xgb_grid,
-                scoring="recall",
+                scoring="f1",
                 cv=cv,
                 n_jobs=1,
                 verbose=1
@@ -271,7 +333,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "XGBoost + class weighting | CV Recall: %.4f | Params: %s",
+                "XGBoost + class weighting | CV f1: %.4f | Params: %s",
                 xgb_search.best_score_,
                 xgb_search.best_params_
             )
@@ -281,6 +343,7 @@ class ModelTrainer:
             # ============================================================
 
             xgb_smote_pipeline = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
                 ("smote", SMOTE(
                     random_state=self.model_trainer_config.random_state
                 )),
@@ -299,7 +362,7 @@ class ModelTrainer:
             xgb_smote_search = GridSearchCV(
                 estimator=xgb_smote_pipeline,
                 param_grid=xgb_smote_grid,
-                scoring="recall",
+                scoring="f1",
                 cv=cv,
                 n_jobs=1,
                 verbose=1
@@ -314,7 +377,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "XGBoost + SMOTE | CV Recall: %.4f | Params: %s",
+                "XGBoost + SMOTE | CV f1: %.4f | Params: %s",
                 xgb_smote_search.best_score_,
                 xgb_smote_search.best_params_
             )
@@ -323,25 +386,29 @@ class ModelTrainer:
             # CatBoost + class weighting
             # ============================================================
 
-            catboost_model = CatBoostClassifier(
-                random_seed=self.model_trainer_config.random_state,
-                verbose=False
-            )
+            catboost_model = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
+                ("model", CatBoostClassifier(
+                                random_seed=self.model_trainer_config.random_state,
+                                verbose=False
+                            ) )
+            ])
 
             catboost_grid = {
-                "iterations": [100, 200],
-                "depth": [4, 6, 8],
-                "learning_rate": [0.05, 0.1],
-                "class_weights": [
+                "model__iterations": [100, 200],
+                "model__depth": [4, 6, 8],
+                "model__learning_rate": [0.05, 0.1],
+                "model__class_weights": [
                     [1, 1],
-                    [1, scale_pos_weight]
-                ]
+                    [1, scale_pos_weight],
+                ],
             }
+
 
             catboost_search = GridSearchCV(
                 estimator=catboost_model,
                 param_grid=catboost_grid,
-                scoring="recall",
+                scoring="f1",
                 cv=cv,
                 n_jobs=1,
                 verbose=1
@@ -356,7 +423,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "CatBoost + class weighting | CV Recall: %.4f | Params: %s",
+                "CatBoost + class weighting | CV f1: %.4f | Params: %s",
                 catboost_search.best_score_,
                 catboost_search.best_params_
             )
@@ -399,6 +466,7 @@ class ModelTrainer:
                 )
 
                 pipeline = Pipeline([
+                    ("preprocessor", self._create_preprocessor(X_train)),
                     (
                         "smoteenn",
                         SMOTEENN(
@@ -412,7 +480,7 @@ class ModelTrainer:
                     pipeline,
                     X_train,
                     y_train,
-                    scoring="recall",
+                    scoring="f1",
                     cv=cv,
                     n_jobs=1
                 )
@@ -433,6 +501,7 @@ class ModelTrainer:
             )
 
             smoteenn_best_model = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
                 (
                     "smoteenn",
                     SMOTEENN(
@@ -458,7 +527,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "Optuna AdaBoost + SMOTEENN | CV Recall: %.4f | Params: %s",
+                "Optuna AdaBoost + SMOTEENN | CV f1: %.4f | Params: %s",
                 smoteenn_study.best_value,
                 smoteenn_study.best_params
             )
@@ -480,6 +549,7 @@ class ModelTrainer:
                 )
 
                 pipeline = Pipeline([
+                    ("preprocessor", self._create_preprocessor(X_train)),
                     (
                         "smote",
                         SMOTE(
@@ -493,7 +563,7 @@ class ModelTrainer:
                     pipeline,
                     X_train,
                     y_train,
-                    scoring="recall",
+                    scoring="f1",
                     cv=cv,
                     n_jobs=1
                 )
@@ -514,6 +584,7 @@ class ModelTrainer:
             )
 
             smote_best_model = Pipeline([
+                ("preprocessor", self._create_preprocessor(X_train)),
                 (
                     "smote",
                     SMOTE(
@@ -539,7 +610,7 @@ class ModelTrainer:
             }
 
             logger.info(
-                "Optuna AdaBoost + SMOTE | CV Recall: %.4f | Params: %s",
+                "Optuna AdaBoost + SMOTE | CV f1: %.4f | Params: %s",
                 smote_study.best_value,
                 smote_study.best_params
             )
@@ -644,26 +715,39 @@ class ModelTrainer:
                 y_train=y_train,
             )
 
-            experiment_results = self._run_hyperparameter_experiments(
+            # GridSearchCV experiments
+            gridsearch_results = self._run_hyperparameter_experiments(
                 X_train=X_train,
-                y_train=y_train
+                y_train=y_train,
             )
 
+            # Optuna experiments
             optuna_results = self._run_optuna_experiments(
                 X_train=X_train,
-                y_train=y_train
+                y_train=y_train,
             )
 
-            experiment_results.update(optuna_results)
+            # Keep GridSearchCV and Optuna results separate
+            experiment_results = {}
 
+            for name, result in gridsearch_results.items():
+                if name in ("adaboost_smote", "adaboost_smoteenn"):
+                    experiment_results[f"{name}_gridsearch"] = result
+                else:
+                    experiment_results[name] = result
+
+            for name, result in optuna_results.items():
+                experiment_results[f"{name}_optuna"] = result
+
+            # Save experiment results
             experiment_results_path = self._save_experiment_results(
-                experiment_results=experiment_results
+                experiment_results=experiment_results,
             )
 
+            # Save candidate models
             candidate_model_paths = {}
 
             for model_name, model in candidate_models.items():
-
                 model_path = self._save_model(
                     model=model,
                     model_name=model_name,
@@ -671,14 +755,17 @@ class ModelTrainer:
 
                 candidate_model_paths[model_name] = model_path
 
+            # Create trainer artifact
             model_trainer_artifact = ModelTrainerArtifact(
-            baseline_model_path=baseline_model_path,
-            candidate_model_paths=candidate_model_paths,
-            experiment_results_path=experiment_results_path
+                baseline_model_path=baseline_model_path,
+                candidate_model_paths=candidate_model_paths,
+                experiment_results_path=experiment_results_path,
             )
 
             return model_trainer_artifact
 
         except Exception as e:
             logger.error("%s", e)
-            raise CustomerChurnException(e,sys,"Model Trainer","initiate model trainer",) from e
+            raise CustomerChurnException(
+                e, sys, "Model Trainer", "initiate model trainer"
+            ) from e

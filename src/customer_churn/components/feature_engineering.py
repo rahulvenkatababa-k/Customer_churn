@@ -83,13 +83,16 @@ class FeatureEngineering:
             raise CustomerChurnException(e, sys, "Feature Engineering","prepare features and target") from e
 
     def _split_train_test(self,X: pd.DataFrame,
-                          y: pd.Series,) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+                          y: pd.Series,) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series]:
         try:
-            X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2,random_state=42,stratify=y,)
+            X_train, X_temp, y_train, y_temp = train_test_split(X,y,test_size=0.30,random_state=self.feature_engineering_config.random_state,stratify=y,)
 
-            logger.info("Train/test split completed. ""X_train=%s, X_test=%s",X_train.shape,X_test.shape,)
+            X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.50, random_state=self.feature_engineering_config.random_state, stratify=y_temp)
 
-            return X_train, X_test, y_train, y_test
+
+            logger.info("Train/test split completed. ""X_train=%s,X_val=%s , X_test=%s",X_train.shape,X_val.shape,X_test.shape,)
+
+            return X_train, X_val, X_test, y_train, y_val, y_test
 
         except Exception as e:
             logger.exception("Failed to split train/test data.")
@@ -214,6 +217,8 @@ class FeatureEngineering:
         X_test: pd.DataFrame,
         y_train: pd.Series,
         y_test: pd.Series,
+        X_val: pd.DataFrame,
+        y_val: pd.Series,
     ) -> None:
         try:
             config = self.feature_engineering_config
@@ -224,6 +229,8 @@ class FeatureEngineering:
                 "X_test": config.X_test_path,
                 "y_train": config.y_train_path,
                 "y_test": config.y_test_path,
+                "X_val": config.X_val_path,
+                "y_val": config.y_val_path,
             }
 
             # Create parent directories for configured paths.
@@ -247,6 +254,11 @@ class FeatureEngineering:
             y_test.to_frame(name=self.TARGET_COLUMN).to_csv(
                 output_paths["y_test"], index=False
             )
+            X_val.to_csv(output_paths["X_val"], index=False)
+
+            y_val.to_frame(name=self.TARGET_COLUMN).to_csv(
+                output_paths["y_val"], index=False
+            )
 
             logger.info(
                 "X_train saved to: %s",
@@ -263,6 +275,14 @@ class FeatureEngineering:
             logger.info(
                 "y_test saved to: %s",
                 output_paths["y_test"],
+            )
+            logger.info(
+                "X_val saved to: %s",
+                output_paths["X_val"],
+            )
+            logger.info(
+                "y_val saved to: %s",
+                output_paths["y_val"],
             )
 
         except Exception as e:
@@ -318,39 +338,37 @@ class FeatureEngineering:
             # 2. Separate X and y; remove customerID.
             X, y = self._prepare_features_and_target(df)
 
-            # 3. Split before fitting the preprocessor.
-            X_train, X_test, y_train, y_test = (
-                self._split_train_test(X, y)
-            )
-
-            # 4. Create explicit preprocessing groups.
-            self._create_preprocessor(X_train)
-
-            # 5. Fit on train; transform train and test.
-            X_train, X_test = self._fit_and_transform(
-                X_train, X_test
-            )
-
-            # 6. Save all four datasets to configured paths.
-            self._save_feature_datasets(
+            
+            # 3. Split into train, validation, and test sets.
+            (
                 X_train,
+                X_val,
                 X_test,
                 y_train,
+                y_val,
                 y_test,
-            )
+            ) = self._split_train_test(X, y)
 
-            # 7. Save the fitted preprocessor.
-            self._save_preprocessor()
+            # 4. Save the raw feature splits.
+            self._save_feature_datasets(
+                X_train=X_train,
+                X_val=X_val,
+                X_test=X_test,
+                y_train=y_train,
+                y_val=y_val,
+                y_test=y_test,
+            )
 
             config = self.feature_engineering_config
 
-            # 8. Return the artifact using the agreed contract.
+            # 5. Return the updated artifact.
             artifact = FeatureEngineeringArtifact(
                 X_train_path=config.X_train_path,
                 y_train_path=config.y_train_path,
+                X_val_path=config.X_val_path,
+                y_val_path=config.y_val_path,
                 X_test_path=config.X_test_path,
                 y_test_path=config.y_test_path,
-                preprocessor_file_path=config.preprocessor_file_path,
             )
 
             logger.info(

@@ -53,8 +53,13 @@ class FeatureEngineeringConfig:
                                                       training_pipeline.FEATURE_ENGINEERING_X_TEST_FILE_NAME)
         self.y_test_path = os.path.join(self.engineered_data_dir,
                                                       training_pipeline.FEATURE_ENGINEERING_Y_TEST_FILE_NAME)
+        self.X_val_path = os.path.join(self.engineered_data_dir,
+                                       training_pipeline.FEATURE_ENGINEERING_X_VAL_FILE_NAME)
+        self.y_val_path = os.path.join(self.engineered_data_dir,
+                                       training_pipeline.FEATURE_ENGINEERING_Y_VAL_FILE_NAME)
         self.preprocessor_file_path = os.path.join(self.engineered_data_dir,
                                                    training_pipeline.FEATURE_ENGINEERING_PREPROCESSOR_FILE_NAME)
+        self.random_state = training_pipeline.RANDOM_STATE
 
 class ModelTrainerConfig:
     def __init__(self, training_pipeline_config:TrainingPipelineConfig):

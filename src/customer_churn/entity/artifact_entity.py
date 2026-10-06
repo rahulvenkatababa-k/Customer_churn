@@ -20,9 +20,10 @@ class DataTransformationArtifact:
 class FeatureEngineeringArtifact:
     X_train_path: str
     y_train_path: str
+    X_val_path: str
+    y_val_path: str
     X_test_path: str
     y_test_path: str
-    preprocessor_file_path: str
 
 @dataclass
 class ModelTrainerArtifact:

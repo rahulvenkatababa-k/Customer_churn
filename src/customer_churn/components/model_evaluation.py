@@ -1,6 +1,9 @@
 import os
 import sys
 import json
+
+import pandas as pd
+
 from src.customer_churn.entity.config_entity import ModelEvaluationConfig
 from src.customer_churn.entity.artifact_entity import ModelTrainerArtifact, ModelEvaluationArtifact, FeatureEngineeringArtifact
 from src.customer_churn.utils.utils import load_object, read_csv, save_json, save_confusion_matrix
@@ -26,38 +29,43 @@ class ModelEvaluation:
                 self.feature_engineering_artifact.y_test_path
             ).squeeze()
 
-            baseline_model = load_object(
+            X_val = read_csv(
+            self.feature_engineering_artifact.X_val_path
+        )
+            y_val = read_csv(
+                self.feature_engineering_artifact.y_val_path
+            ).squeeze()
+
+            models = {
+            "baseline": load_object(
                 self.model_trainer_artifact.baseline_model_path
             )
+        }
 
-            # Load regular candidate models
-            candidate_models = {}
 
-            for model_name, model_path in (
+            for name, path in (
                 self.model_trainer_artifact.candidate_model_paths.items()
             ):
-                candidate_models[model_name] = load_object(model_path)
+                models[name] = load_object(path)
 
             # Load experiment results
             with open(
                 self.model_trainer_artifact.experiment_results_path,
-                "r"
+                "r",
+                encoding='utf-8'
             ) as file:
                 experiment_results = json.load(file)
 
-            # Load experiment models
-            experiment_models = {}
 
-            for model_name, result in experiment_results.items():
-                model_path = result["model_path"]
-                experiment_models[model_name] = load_object(model_path)
+            for name, result in experiment_results.items():
+                models[name] = load_object(result["model_path"])
 
             return (
+                X_val,
+                y_val,
                 X_test,
                 y_test,
-                baseline_model,
-                candidate_models,
-                experiment_models,
+                models
             )
 
         except Exception as e:
@@ -78,9 +86,9 @@ class ModelEvaluation:
         try:
 
             accuracy = accuracy_score(y_true=y_test, y_pred=y_pred)
-            precision = precision_score(y_true=y_test, y_pred=y_pred)
-            recall = recall_score(y_true=y_test, y_pred=y_pred)
-            f1 = f1_score(y_true=y_test, y_pred=y_pred)
+            precision = precision_score(y_true=y_test, y_pred=y_pred, zero_division=0)
+            recall = recall_score(y_true=y_test, y_pred=y_pred, zero_division=0)
+            f1 = f1_score(y_true=y_test, y_pred=y_pred,zero_division=0)
             roc_auc = roc_auc_score(y_true=y_test, y_score=y_pred_proba)
             average_precision = average_precision_score(y_true=y_test,y_score=y_pred_proba)
 
@@ -137,61 +145,148 @@ class ModelEvaluation:
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e, sys, "Model Evaluation", "save confusion matrix") from e
+
+    
+    def _create_model_summary(self, validation_report: dict) -> pd.DataFrame:
+        """Create a validation metrics table and rank models by F1."""
+
+        rows = []
+
+        for model_name, metrics in validation_report.items():
+            precision = metrics["precision"]
+            recall = metrics["recall"]
+
+            # F2 gives recall more weight than precision.
+            denominator = (4 * precision) + recall
+            f2_score = (
+                (5 * precision * recall) / denominator
+                if denominator > 0
+                else 0.0
+            )
+
+            rows.append({
+                "model": model_name,
+                "accuracy": metrics["accuracy"],
+                "precision": precision,
+                "recall": recall,
+                "f1": metrics["f1"],
+                "f2": f2_score,
+                "roc_auc": metrics["roc_auc"],
+                "average_precision": metrics["average_precision"],
+            })
+
+        summary = pd.DataFrame(rows)
+
+        summary = summary.sort_values(
+            by=["f1", "recall", "average_precision"],
+            ascending=[False, False, False],
+        ).reset_index(drop=True)
+
+        summary.insert(0, "rank", range(1, len(summary) + 1))
+
+        return summary
+
     def initiate_model_evaluation(self):
         try:
-            (X_test,y_test,baseline_model,candidate_models, experiment_models) = self._load_data()
+            X_val, y_val, X_test, y_test, models = self._load_data()
 
-            evaluation_report = {}
+            validation_report = {}
             confusion_matrices = {}
 
-            # Evaluate baseline
-            y_pred, y_pred_proba = self._make_predictions(model=baseline_model,X_test=X_test,)
-
-            report, cm = self._calculate_metrics(y_pred_proba=y_pred_proba,y_pred=y_pred,y_test=y_test,model_name="baseline")
-
-            evaluation_report["baseline"] = report
-            confusion_matrices["baseline"] = cm
-
-            # Evaluate candidate models
-            for model_name, model in candidate_models.items():
-
-                y_pred, y_pred_proba = self._make_predictions(model=model,X_test=X_test,)
-
-                report, cm = self._calculate_metrics(
-                    y_pred_proba=y_pred_proba,
-                    y_pred=y_pred,
-                    y_test=y_test,
-                    model_name=model_name
-                )
-
-                evaluation_report[model_name] = report
-                confusion_matrices[model_name] = cm
-
-            # Evaluate experiment models
-            for model_name, model in experiment_models.items():
-
+            # Evaluate every model on validation data.
+            for model_name, model in models.items():
                 y_pred, y_pred_proba = self._make_predictions(
                     model=model,
-                    X_test=X_test,
+                    X_test=X_val,
                 )
 
                 report, cm = self._calculate_metrics(
                     y_pred_proba=y_pred_proba,
                     y_pred=y_pred,
-                    y_test=y_test,
-                    model_name=model_name
+                    y_test=y_val,
+                    model_name=model_name,
                 )
 
-                evaluation_report[model_name] = report
-                confusion_matrices[model_name] = cm
+                validation_report[model_name] = report
+                confusion_matrices[f"validation_{model_name}"] = cm
+
+            
+            # Generate and save the validation model comparison report.
+            summary = self._create_model_summary(validation_report)
+
+            report_path = self.model_evaluation_config.model_evaluation_report_path
+            summary_path = os.path.splitext(report_path)[0] + "_validation_summary.csv"
+
+            os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+
+            summary.to_csv(summary_path, index=False)
+
+            logger.info(
+                "\nVALIDATION MODEL RANKING\n%s",
+                summary.to_string(
+                    index=False,
+                    float_format=lambda x: f"{x:.4f}",
+                ),
+            )
+
+            logger.info(
+                "Validation summary saved to: %s",
+                summary_path,
+            )
 
 
-            # Save complete evaluation report
+            # Select using validation F1, then recall, then average precision.
+            selected_model_name = max(
+                validation_report,
+                key=lambda name: (
+                    validation_report[name]["f1"],
+                    validation_report[name]["recall"],
+                    validation_report[name]["average_precision"],
+                ),
+            )
+
+            selected_model = models[selected_model_name]
+
+            logger.info(
+                "Selected model: %s | Validation F1: %.4f",
+                selected_model_name,
+                validation_report[selected_model_name]["f1"],
+            )
+
+            # Evaluate only the selected model on the held-out test set.
+            y_pred, y_pred_proba = self._make_predictions(
+                model=selected_model,
+                X_test=X_test,
+            )
+
+            test_report, test_cm = self._calculate_metrics(
+                y_pred_proba=y_pred_proba,
+                y_pred=y_pred,
+                y_test=y_test,
+                model_name=f"final_test_{selected_model_name}",
+            )
+
+            confusion_matrices[
+                f"final_test_{selected_model_name}"
+            ] = test_cm
+
+            evaluation_report = {
+                "validation": validation_report,
+                "selection": {
+                    "selected_model": selected_model_name,
+                    "selection_metric": "f1",
+                    "tie_breakers": ["recall", "average_precision"],
+                },
+                "test": {
+                    "model": selected_model_name,
+                    "metrics": test_report,
+                },
+            }
+
             save_report = self._save_evaluation_report(
                 report=evaluation_report
             )
 
-            # Save confusion matrix for each model
             save_cm = self._save_confusion_matrix(
                 confusion_matrices=confusion_matrices
             )
@@ -200,6 +295,9 @@ class ModelEvaluation:
                 save_report,
                 save_cm,
             )
+
         except Exception as e:
             logger.error("%s", e)
-            raise CustomerChurnException(e,sys, "Model Evaluation", "initiate model evaluation") from e
+            raise CustomerChurnException(
+                e, sys, "Model Evaluation", "initiate model evaluation"
+            ) from e
