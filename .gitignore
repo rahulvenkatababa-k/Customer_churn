@@ -25,3 +25,4 @@ terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.*
 catboost_info/*
+mlflow.db
