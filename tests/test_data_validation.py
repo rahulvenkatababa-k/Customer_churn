@@ -1,6 +1,8 @@
 import json
 import pandas as pd
 from src.customer_churn.components.data_validation import DataValidation
+from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact, DataValidationArtifact)
+from src.customer_churn.entity.config_entity import DataValidationConfig
 
 def create_valid_dataframe():
     return pd.DataFrame({
@@ -137,3 +139,95 @@ def test_failed_validation_report_contains_failure_cases(tmp_path):
 
     assert report["validation_status"] is False
     assert report["failure_cases"] == failure_cases.to_dict(orient="records")
+
+def test_initiate_data_validation_with_valid_data(tmp_path):
+    dataframe = create_valid_dataframe()
+
+    input_path = tmp_path / "input.csv"
+    dataframe.to_csv(input_path, index=False)
+
+    ingestion_artifact = DataIngestionArtifact(
+        ingested_data_path=str(input_path),
+        dataset_version="test-version",
+    )
+
+    validation_dir = tmp_path / "validation"
+
+    config = type(
+        "Config",
+        (),
+        {
+            "validated_data_dir": str(validation_dir / "validated"),
+            "validated_data_path": str(
+                validation_dir / "validated" / "customer_churn.csv"
+            ),
+            "data_validation_dir": str(validation_dir),
+            "validation_report": str(
+                validation_dir / "validation_report.json"
+            ),
+        },
+    )()
+
+    validator = DataValidation(
+        data_ingestion_artifact=ingestion_artifact,
+        data_validation_config=config,
+    )
+
+    artifact = validator.initiate_data_validation()
+
+    assert isinstance(artifact, DataValidationArtifact)
+    assert artifact.validated_status is True
+    assert artifact.validated_data_path == config.validated_data_path
+    assert artifact.validation_report_path == config.validation_report
+
+    assert (validation_dir / "validated" / "customer_churn.csv").exists()
+    assert (validation_dir / "validation_report.json").exists()
+
+def test_initiate_data_validation_with_invalid_data(tmp_path):
+    import json
+
+    dataframe = create_valid_dataframe()
+    dataframe.loc[0, "Churn"] = "Maybe"
+
+    input_path = tmp_path / "invalid_customer_churn.csv"
+    dataframe.to_csv(input_path, index=False)
+
+    validation_dir = tmp_path / "validation"
+    validated_dir = validation_dir / "validated"
+
+    config = type(
+        "Config",
+        (),
+        {
+            "validated_data_dir": str(validated_dir),
+            "validated_data_path": str(
+                validated_dir / "customer_churn.csv"
+            ),
+            "data_validation_dir": str(validation_dir),
+            "validation_report": str(
+                validation_dir / "validation_report.json"
+            ),
+        },
+    )()
+
+    ingestion_artifact = DataIngestionArtifact(
+        ingested_data_path=str(input_path),
+        dataset_version="test",
+    )
+
+    validator = DataValidation(
+        data_ingestion_artifact=ingestion_artifact,
+        data_validation_config=config,
+    )
+
+    artifact = validator.initiate_data_validation()
+
+    assert artifact.validated_status is False
+    assert artifact.validated_data_path is None
+    assert artifact.validation_report_path is not None
+
+    with open(artifact.validation_report_path, encoding="utf-8") as file:
+        report = json.load(file)
+
+    assert report["validation_status"] is False
+    assert report["failure_cases"]

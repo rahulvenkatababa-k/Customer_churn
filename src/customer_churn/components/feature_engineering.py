@@ -1,10 +1,7 @@
 import os
 import sys
-import joblib
 import pandas as pd
 
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 
 from src.customer_churn.exception.exception import CustomerChurnException
@@ -98,118 +95,7 @@ class FeatureEngineering:
             logger.exception("Failed to split train/test data.")
             raise CustomerChurnException(e, sys, "Feature Engineering", "split train test") from e
 
-    def _create_preprocessor(self,X_train: pd.DataFrame,) -> ColumnTransformer:
-        try:
-            numerical_columns = self.NUMERICAL_COLUMNS.copy()
-            binary_columns = self.BINARY_COLUMNS.copy()
 
-            categorical_columns = [
-                column for column in X_train.columns 
-                if column not in numerical_columns + binary_columns]
-
-            for column in numerical_columns:
-                if not pd.api.types.is_numeric_dtype(X_train[column]):
-                    raise TypeError(f"{column} must be numeric before scaling.")
-
-            if not pd.api.types.is_numeric_dtype(X_train["SeniorCitizen"]):
-                raise TypeError("SeniorCitizen must be numeric for passthrough.")
-
-            logger.info("Numerical columns: %s", numerical_columns)
-            logger.info("Binary columns: %s", binary_columns)
-            logger.info("Categorical columns: %s", categorical_columns)
-
-            transformers = [
-                (
-                    "numerical",
-                    StandardScaler(),
-                    numerical_columns,
-                ),
-                (
-                    "binary",
-                    "passthrough",
-                    binary_columns,
-                ),
-            ]
-
-            if categorical_columns:
-                transformers.append(
-                    (
-                        "categorical",
-                        OneHotEncoder(
-                            handle_unknown="ignore",
-                            sparse_output=False,
-                        ),
-                        categorical_columns,
-                    )
-                )
-
-            self.preprocessor = ColumnTransformer(
-                transformers=transformers,
-                remainder="drop",
-                verbose_feature_names_out=False,
-            )
-
-            logger.info("Preprocessor created successfully.")
-
-            return self.preprocessor
-
-        except Exception as e:
-            logger.exception("Failed to create preprocessor.")
-            raise CustomerChurnException(
-                e, sys, "Feature Engineering", "create preprocessor"
-            ) from e
-
-    def _fit_and_transform(
-        self,
-        X_train: pd.DataFrame,
-        X_test: pd.DataFrame,
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
-        try:
-            if self.preprocessor is None:
-                raise ValueError(
-                    "Preprocessor has not been created."
-                )
-
-            X_train_transformed = self.preprocessor.fit_transform(
-                X_train
-            )
-
-            X_test_transformed = self.preprocessor.transform(
-                X_test
-            )
-
-            feature_names = (
-                self.preprocessor.get_feature_names_out()
-            )
-
-            X_train_df = pd.DataFrame(
-                X_train_transformed,
-                columns=feature_names,
-                index=X_train.index,
-            )
-
-            X_test_df = pd.DataFrame(
-                X_test_transformed,
-                columns=feature_names,
-                index=X_test.index,
-            )
-
-            logger.info(
-                "Transformation completed. "
-                "X_train=%s, X_test=%s",
-                X_train_df.shape,
-                X_test_df.shape,
-            )
-
-            return X_train_df, X_test_df
-
-        except Exception as e:
-            logger.exception(
-                "Failed to fit and transform features."
-            )
-            raise CustomerChurnException(
-                e, sys, "Feature Engineering", "fit and transform"
-            ) from e
 
     def _save_feature_datasets(
         self,
@@ -290,40 +176,6 @@ class FeatureEngineering:
             raise CustomerChurnException(
                 e, sys, "Feature Engineering",
                 "save feature datasets"
-            ) from e
-
-    def _save_preprocessor(self) -> None:
-        try:
-            if self.preprocessor is None:
-                raise ValueError(
-                    "Cannot save an unfitted preprocessor."
-                )
-
-            preprocessor_path = (
-                self.feature_engineering_config.preprocessor_file_path
-            )
-
-            os.makedirs(
-                os.path.dirname(
-                    os.fspath(preprocessor_path)
-                ) or ".",
-                exist_ok=True,
-            )
-
-            joblib.dump(
-                self.preprocessor,
-                preprocessor_path,
-            )
-
-            logger.info(
-                "Preprocessor saved to: %s",
-                preprocessor_path,
-            )
-
-        except Exception as e:
-            logger.exception("Failed to save preprocessor.")
-            raise CustomerChurnException(
-                e, sys, "Feature Engineering", "save preprocessor"
             ) from e
 
     def initiate_feature_engineering(

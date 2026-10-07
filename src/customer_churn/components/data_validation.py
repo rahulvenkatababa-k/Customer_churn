@@ -32,7 +32,7 @@ class DataValidation:
 
     def _load_data(self) ->pd.DataFrame:
         try:
-            data = pd.read_csv(self.data_ingestion_artifact.ingested_data_path)
+            data = pd.read_csv(self.data_ingestion_artifact.ingested_data_path, dtype={"TotalCharges": str})
             logger.info("Ingested Dataframe loaded sucessfully")
         except Exception as e:
             logger.error("%s", e)
