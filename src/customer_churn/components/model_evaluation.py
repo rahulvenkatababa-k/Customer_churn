@@ -1,10 +1,10 @@
 import os
 import sys
 import json
-import mlflow
+
 import pandas as pd
 
-from src.customer_churn.utils.ml_utils import (log_metrics, log_parameters)
+from src.customer_churn.utils.ml_utils import (log_metrics, log_parameters, register_model)
 from src.customer_churn.entity.config_entity import ModelEvaluationConfig
 from src.customer_churn.entity.artifact_entity import ModelTrainerArtifact, ModelEvaluationArtifact, FeatureEngineeringArtifact
 from src.customer_churn.utils.utils import load_object, read_csv, save_json, save_confusion_matrix
@@ -280,6 +280,15 @@ class ModelEvaluation:
                     f"test_{metric}": float(value)
                     for metric, value in test_report.items()
                 })
+
+            model_uri = register_model(model=selected_model,
+                                       model_name="customer_churn_model",
+                                       X_sample=X_val.head(5))
+
+            log_parameters({
+            "registered_model_name": "customer_churn_model",
+            "registered_model_uri": model_uri,
+            })
 
             confusion_matrices[
                 f"final_test_{selected_model_name}"
