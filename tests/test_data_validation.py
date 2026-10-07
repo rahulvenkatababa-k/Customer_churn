@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from src.customer_churn.components.data_validation import DataValidation
 
@@ -59,3 +60,80 @@ def test_duplicate_customer_ids_fail_schema_validation():
 
     assert status is False
     assert failure_cases is not None
+
+
+def test_valid_dataframe_is_saved(tmp_path):
+    validatior = DataValidation.__new__(DataValidation)
+    validatior.data_validation_config = type(
+        "config",
+        (),
+        {
+            "validated_data_dir" : str(tmp_path/"validated"),
+            "validated_data_path" : str(tmp_path/"validated"/"customer_churn.csv")
+        }
+    )()
+
+    dataframe = create_valid_dataframe()
+    saved_path = validatior._save_validated_dataframe(dataframe)
+
+    assert saved_path == validatior.data_validation_config.validated_data_path
+    saved_dataframe = pd.read_csv(saved_path, dtype={"TotalCharges":str})
+    pd.testing.assert_frame_equal(saved_dataframe, dataframe, check_dtype=False)
+
+def test_successful_validation_report_is_generated(tmp_path):
+    validator = DataValidation.__new__(DataValidation)
+
+    validator.data_validation_config = type(
+        "Config",
+        (),
+        {
+            "data_validation_dir": str(tmp_path / "validation"),
+            "validation_report": str(
+                tmp_path / "validation" / "validation_report.json"
+            ),
+        },
+    )()
+
+    report_path = validator._generate_validation_report(
+        validation_status=True,
+        failure_cases=None,
+    )
+
+    with open(report_path, "r") as file:
+        report = json.load(file)
+
+    assert report["validation_status"] is True
+    assert report["failure_cases"] == []
+
+
+def test_failed_validation_report_contains_failure_cases(tmp_path):
+    validator = DataValidation.__new__(DataValidation)
+
+    validator.data_validation_config = type(
+        "Config",
+        (),
+        {
+            "data_validation_dir": str(tmp_path / "validation"),
+            "validation_report": str(
+                tmp_path / "validation" / "validation_report.json"
+            ),
+        },
+    )()
+
+    failure_cases = pd.DataFrame(
+        {
+            "column": ["Churn"],
+            "failure_case": ["Maybe"],
+        }
+    )
+
+    report_path = validator._generate_validation_report(
+        validation_status=False,
+        failure_cases=failure_cases,
+    )
+
+    with open(report_path, "r") as file:
+        report = json.load(file)
+
+    assert report["validation_status"] is False
+    assert report["failure_cases"] == failure_cases.to_dict(orient="records")
