@@ -18,7 +18,7 @@ jobs:
       MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
       MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
       POSTGRES_SQL_URI: ${{ secrets.POSTGRES_SQL_URI }}
-      
+      MODEL_NAME: ${{ secrets.MODEL_NAME}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
