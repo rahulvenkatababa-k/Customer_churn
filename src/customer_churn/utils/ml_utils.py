@@ -64,3 +64,6 @@ def register_model(
     return model_info.model_uri
     
 
+def load_model(model_uri: str):
+    configure_mlflow()
+    return mlflow.sklearn.load_model(model_uri)

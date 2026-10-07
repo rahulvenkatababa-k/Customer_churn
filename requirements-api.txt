@@ -3,6 +3,8 @@ uvicorn
 pandas
 numpy
 scikit-learn
-joblib
-prometheus-fastapi-instrumentator
-boto3
+imbalanced-learn
+catboost
+mlflow
+truststore
+python-dotenv
