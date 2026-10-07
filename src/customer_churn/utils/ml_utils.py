@@ -52,7 +52,11 @@ def register_model(
         name= f"{model_name}_artifact",
         registered_model_name= model_name,
         signature= signature,
-        input_example=X_sample
+        input_example=X_sample,
+        skops_trusted_types = [
+            "catboost.core.CatBoostClassifier",
+            "imblearn.pipeline.Pipeline",
+        ]
     )
 
     logger.info(
