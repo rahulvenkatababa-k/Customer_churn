@@ -1,0 +1,15 @@
+apiVersion: v1
+
+kind: Service
+
+metadata:
+  name: customer-churn-streamlit
+
+spec:
+  selector:
+    app: customer-churn-streamlit
+  ports:
+  - port: 8501
+    targetPort: 8501
+    protocol: TCP
+  type: ClusterIP

@@ -26,3 +26,4 @@ terraform/*.tfstate
 terraform/*.tfstate.*
 catboost_info/*
 mlflow.db
+k8s/api-secret.yaml

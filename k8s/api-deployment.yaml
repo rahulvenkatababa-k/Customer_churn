@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: customer-churn-api
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: customer-churn-api
+
+  template:
+    metadata:
+      labels:
+        app: customer-churn-api
+
+    spec:
+      containers:
+      - name: customer-churn-api
+        image: ghcr.io/rahulvenkatababa-k/customer-churn-api:latest
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        envFrom:
+          - configMapRef:
+              name: customer-churn-config
+          - secretRef:
+              name: customer-churn-secrets
+
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+
+        ports:
+        - containerPort: 8000
