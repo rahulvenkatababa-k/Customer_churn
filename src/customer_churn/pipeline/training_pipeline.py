@@ -1,6 +1,7 @@
 import sys
 import time
 import mlflow
+from sqlalchemy import exc
 
 from src.customer_churn.exception.exception import CustomerChurnException
 from src.customer_churn.logging.logger import logger
@@ -9,18 +10,20 @@ from src.customer_churn.configuration.configuration import config
 from src.customer_churn.entity.config_entity import (TrainingPipelineConfig, 
                                                      DataIngestionConfig, DataValidationConfig,
                                                      DataTransformationConfig, FeatureEngineeringConfig,
-                                                     ModelTrainerConfig, ModelEvaluationConfig
+                                                     ModelTrainerConfig, ModelEvaluationConfig,
+                                                     ModelPusherConfig
                                                      )
 from src.customer_churn.entity.artifact_entity import (DataIngestionArtifact,DataValidationArtifact,
                                                        DataTransformationArtifact,FeatureEngineeringArtifact,
-                                                       ModelTrainerArtifact, ModelEvaluationArtifact)
+                                                       ModelTrainerArtifact, ModelEvaluationArtifact,
+                                                       ModelPusherArtifact)
 from src.customer_churn.components.data_ingestion import DataIngestion
 from src.customer_churn.components.data_validation import DataValidation
 from src.customer_churn.components.data_transformation import DataTransformation
 from src.customer_churn.components.feature_engineering import FeatureEngineering
 from src.customer_churn.components.model_trainer import ModelTrainer
 from src.customer_churn.components.model_evaluation import ModelEvaluation
-
+from src.customer_churn.components.model_pusher import ModelPusher
 
 class TrainingPipeline:
     def __init__(self):
@@ -107,6 +110,35 @@ class TrainingPipeline:
         except Exception as e:
             logger.error("%s", e)
             raise CustomerChurnException(e,sys, "Training Pipeline", "start model evaluation") from e
+
+    def start_model_pusher(
+        self,
+        model_evaluation_artifact: ModelEvaluationArtifact,
+    ):
+        try:
+            model_pusher_config = ModelPusherConfig()
+            model_pusher  = ModelPusher(model_pusher_config=model_pusher_config)
+            model_pusher_artifact = model_pusher.initiate_model_pusher(
+                model_evaluation_artifact=model_evaluation_artifact
+            )
+
+            logger.info(
+                "Model Pusher completed: model='%s', version='%s', alias='%s'",
+                model_pusher_artifact.model_name,
+                model_pusher_artifact.model_version,
+                model_pusher_artifact.model_alias,
+            )
+
+            return model_pusher_artifact
+
+        except Exception as e:
+            logger.error("%s", e)
+            raise CustomerChurnException(
+                e,
+                sys,
+                "Training Pipeline",
+                "start model pusher",
+            )
 
     def _execute_pipeline_stages(self):
     
@@ -210,6 +242,23 @@ class TrainingPipeline:
             f" Model Evaluation Completed | "
             f"Time: {stage_duration:.2f} seconds | "
             f"Artifact: {model_evaluation_artifact}"
+            )
+        logger.info("-----------------------------------------------------------------------------")
+
+
+        stage_start_time = time.perf_counter()
+                                            
+        logger.info(" Starting Model Pusher ")
+        
+        model_pusher_artifact = self.start_model_pusher(model_evaluation_artifact=model_evaluation_artifact)
+
+        stage_duration = time.perf_counter() - stage_start_time
+        
+        
+        logger.info(
+            f" Model Pusher Completed | "
+            f"Time: {stage_duration:.2f} seconds | "
+            f"Artifact: {model_pusher_artifact}"
             )
         logger.info("-----------------------------------------------------------------------------")
         

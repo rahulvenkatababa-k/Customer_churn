@@ -316,8 +316,9 @@ class ModelEvaluation:
             )
 
             return ModelEvaluationArtifact(
-                save_report,
-                save_cm,
+                evaluation_report_file_path=save_report,
+                confusion_matrix_file_paths=save_cm,
+                registered_model_uri=model_uri,
             )
 
         except Exception as e:

@@ -2,6 +2,7 @@ import os
 import mlflow
 import truststore
 from mlflow.models import infer_signature
+from mlflow.tracking import MlflowClient
 
 truststore.inject_into_ssl()
 from src.customer_churn.configuration.configuration import config
@@ -71,3 +72,62 @@ def register_model(
 def load_model(model_uri: str):
     configure_mlflow()
     return mlflow.sklearn.load_model(model_uri)
+
+
+def promote_model_to_alias(
+    model_uri: str,
+    model_name: str,
+    alias: str,
+) -> str:
+    """
+    Promote an already-registered model version to an MLflow alias.
+
+    Args:
+        model_uri: Exact model URI returned by register_model().
+        model_name: Registered MLflow model name.
+        alias: Alias to assign.
+
+    Returns:
+        The promoted model version.
+    """
+
+    client = MlflowClient()
+
+    model_versions = client.search_model_versions(
+        filter_string=f"name='{model_name}'"
+    )
+
+    matching_versions = [
+        version
+        for version in model_versions
+        if version.source == model_uri
+    ]
+
+    if not matching_versions:
+        raise ValueError(
+            f"No registered model version found for "
+            f"model '{model_name}' with URI '{model_uri}'."
+        )
+
+    if len(matching_versions) > 1:
+        raise ValueError(
+            f"Multiple registered model versions found for "
+            f"model '{model_name}' with URI '{model_uri}'."
+        )
+
+    model_version = matching_versions[0].version
+
+    client.set_registered_model_alias(
+        name=model_name,
+        alias=alias,
+        version=model_version,
+    )
+
+    logger.info(
+        "Promoted model '%s' version '%s' to alias '%s'",
+        model_name,
+        model_version,
+        alias,
+    )
+
+    return str(model_version)

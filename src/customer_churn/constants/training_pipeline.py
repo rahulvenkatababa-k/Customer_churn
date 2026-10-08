@@ -49,3 +49,7 @@ MODEL_EVALUATION_DIR_NAME = "model_evaluation"
 MODEL_EVALUATION_REPORT_FILE_NAME = "evaluation_report.json"
 MODEL_EVALUATION_CONFUSION_MATRIX_DIR_NAME = "confusion_matrices"
 
+# Model Pusher stage related constants start with var name MODEL_PUSHER
+
+MODEL_PUSHER_MODEL_NAME = "customer_churn_model"
+MODEL_PUSHER_MODEL_ALIAS = "champion"

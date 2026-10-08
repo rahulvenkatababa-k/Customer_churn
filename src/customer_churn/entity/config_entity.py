@@ -86,4 +86,7 @@ class ModelEvaluationConfig:
         self.model_evaluation_confusion_matrix_dir = os.path.join(self.model_evaluation_dir,
                                                                    training_pipeline.MODEL_EVALUATION_CONFUSION_MATRIX_DIR_NAME)
         
-        
+class ModelPusherConfig:
+    def __init__(self):
+        self.model_name = training_pipeline.MODEL_PUSHER_MODEL_NAME
+        self.model_alias = training_pipeline.MODEL_PUSHER_MODEL_ALIAS

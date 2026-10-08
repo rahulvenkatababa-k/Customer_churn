@@ -35,3 +35,10 @@ class ModelTrainerArtifact:
 class ModelEvaluationArtifact:
     evaluation_report_file_path: str
     confusion_matrix_file_paths : dict[str, str]
+    registered_model_uri: str
+
+@dataclass
+class ModelPusherArtifact:
+    model_name: str
+    model_alias: str
+    model_version: str
