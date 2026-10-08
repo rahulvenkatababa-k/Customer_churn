@@ -1,10 +1,55 @@
 services:
-  network-security-api:
-    build:
+
+  api:
+    build: 
       context: .
       dockerfile: Dockerfile
-    image: network-security-api:latest
-    container_name: network-security-api
-    ports:
-      - "8000:8000"
+    env_file:
+      - .env
+    container_name: customer-churn-api
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  streamlit:
+    build: 
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: customer-churn-streamlit
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+
+    environment:
+      - PREDICTION_API_URL=http://api:8000/predict
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
