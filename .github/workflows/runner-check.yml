@@ -23,15 +23,11 @@ jobs:
       - name: Check kubectl
         shell: cmd
         run: |
-          whoami
-          where kubectl
-          kubectl version --client
-          kubectl config current-context
-          kubectl get nodes
+          "C:\Users\lokes\AppData\Local\Programs\DockerDesktop\resources\bin\kubectl.exe" version --client
+          "C:\Users\lokes\AppData\Local\Programs\DockerDesktop\resources\bin\kubectl.exe" --kubeconfig="C:\Users\lokes\.kube\config" config current-context
+          "C:\Users\lokes\AppData\Local\Programs\DockerDesktop\resources\bin\kubectl.exe" --kubeconfig="C:\Users\lokes\.kube\config" get nodes
 
       - name: Check Helm
         shell: cmd
         run: |
-          where helm
-          helm version
-          helm list
+          "C:\Users\lokes\AppData\Local\Microsoft\WinGet\Packages\Helm.Helm_Microsoft.Winget.Source_8wekyb3d8bbwe\windows-amd64\helm.exe" version
