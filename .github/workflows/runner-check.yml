@@ -31,3 +31,9 @@ jobs:
         shell: cmd
         run: |
           "C:\Users\lokes\AppData\Local\Microsoft\WinGet\Packages\Helm.Helm_Microsoft.Winget.Source_8wekyb3d8bbwe\windows-amd64\helm.exe" version
+      
+      - name: Check Helm Kubernetes Access
+        shell: cmd
+        run: |
+          helm list --all-namespaces
+          kubectl get pods -A
