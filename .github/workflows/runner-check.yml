@@ -11,20 +11,20 @@ jobs:
       [self-hosted, windows, X64]
     steps:
       - name: Check Runner identity
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           Write-Host "Runner user:"
           whoami
           Write-Host "Runner workspace:"
           Write-Host $env:GITHUB_WORKSPACE
       - name: Check Kubectl
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           kubectl version --client
           kubectl config current-context
           kubectl get nodes
       - name: Check Helm
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           helm version
           helm list
