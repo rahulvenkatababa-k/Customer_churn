@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Check Runner Identity
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File "{0}"
         run: |
           Write-Host "Runner user:"
           whoami
