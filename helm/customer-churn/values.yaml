@@ -1,0 +1,41 @@
+api:
+  replicaCount: 2
+  image:  
+    repository: ghcr.io/rahulvenkatababa-k/customer-churn-api
+    tag: "latest"
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+
+streamlit:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit
+    tag: "latest"
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8501  
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "128Mi"
+
+
+ingress:
+  enabled: true
+  className: nginx
+  path: /
+  pathType: Prefix

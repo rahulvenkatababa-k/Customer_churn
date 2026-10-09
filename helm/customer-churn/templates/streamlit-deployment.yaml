@@ -1,0 +1,49 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-streamlit
+  labels:
+    app: customer-churn-streamlit
+spec:
+  replicas: {{ .Values.streamlit.replicaCount }}
+  selector:
+    matchLabels:
+      app: customer-churn-streamlit
+  template:
+    metadata:
+      labels:
+        app: customer-churn-streamlit
+    spec:
+      containers:
+        - name: customer-churn-streamlit
+          image: "{{ .Values.streamlit.image.repository }}:{{ .Values.streamlit.image.tag }}"
+          imagePullPolicy: {{ .Values.streamlit.image.pullPolicy }}
+          ports:
+            - containerPort: 8501
+          envFrom:
+            - configMapRef:
+                name: customer-churn-streamlit-config
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3          
+          resources:
+            requests:
+              cpu: {{ .Values.streamlit.resources.requests.cpu | quote }}
+              memory: {{ .Values.streamlit.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.streamlit.resources.limits.cpu | quote }}
+              memory: {{ .Values.streamlit.resources.limits.memory | quote }}

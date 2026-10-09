@@ -1,0 +1,7 @@
+apiVersion: v2
+name: customer-churn
+description: Helm chart for the Customer Churn MLOps application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+icon: "https://github.com/rahulvenkatababa-k/Customer_churn/blob/main/images/Customer%20Churn%20MLOps%20Dashboard.png"

@@ -1,0 +1,374 @@
+apiVersion: v1
+items:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "4"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"customer-churn-api","namespace":"default"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"customer-churn-api"}},"template":{"metadata":{"labels":{"app":"customer-churn-api"}},"spec":{"containers":[{"envFrom":[{"configMapRef":{"name":"customer-churn-config"}},{"secretRef":{"name":"customer-churn-secrets"}}],"image":"ghcr.io/rahulvenkatababa-k/customer-churn-api:latest","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":8000},"initialDelaySeconds":30,"periodSeconds":20,"timeoutSeconds":5},"name":"customer-churn-api","ports":[{"containerPort":8000}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/health","port":8000},"initialDelaySeconds":10,"timeoutSeconds":5},"resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"500m","memory":"512Mi"}}}]}}}}
+    creationTimestamp: "2026-10-08T12:46:33Z"
+    generation: 6
+    name: customer-churn-api
+    namespace: default
+    resourceVersion: "26864"
+    uid: 20ce7f0b-a9b7-4f9d-8066-09ee63ed662f
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: customer-churn-api
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: customer-churn-api
+      spec:
+        containers:
+        - envFrom:
+          - configMapRef:
+              name: customer-churn-config
+          - secretRef:
+              name: customer-churn-secrets
+          image: ghcr.io/rahulvenkatababa-k/customer-churn-api:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: customer-churn-api
+          ports:
+          - containerPort: 8000
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2026-10-08T12:46:33Z"
+      lastUpdateTime: "2026-10-08T16:45:15Z"
+      message: ReplicaSet "customer-churn-api-7b4c999695" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-10-09T12:45:35Z"
+      lastUpdateTime: "2026-10-09T12:45:35Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 6
+    readyReplicas: 2
+    replicas: 2
+    terminatingReplicas: 0
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "2"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"customer-churn-streamlit","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"customer-churn-streamlit"}},"template":{"metadata":{"labels":{"app":"customer-churn-streamlit"}},"spec":{"containers":[{"envFrom":[{"configMapRef":{"name":"customer-churn-streamlit-config"}}],"image":"ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest","livenessProbe":{"failureThreshold":3,"httpGet":{"path":"/_stcore/health","port":8501},"initialDelaySeconds":30,"periodSeconds":20,"timeoutSeconds":5},"name":"customer-churn-streamlit","ports":[{"containerPort":8501}],"readinessProbe":{"failureThreshold":3,"httpGet":{"path":"/_stcore/health","port":8501},"initialDelaySeconds":10,"periodSeconds":10,"timeoutSeconds":5},"resources":{"limits":{"cpu":"500m","memory":"128Mi"},"requests":{"cpu":"500m","memory":"128Mi"}}}]}}}}
+    creationTimestamp: "2026-10-08T14:24:47Z"
+    generation: 4
+    name: customer-churn-streamlit
+    namespace: default
+    resourceVersion: "26927"
+    uid: 0bfa0bfb-d069-4ac4-b5fa-3d7f1baa3d37
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: customer-churn-streamlit
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        labels:
+          app: customer-churn-streamlit
+      spec:
+        containers:
+        - envFrom:
+          - configMapRef:
+              name: customer-churn-streamlit-config
+          image: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest
+          imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: customer-churn-streamlit
+          ports:
+          - containerPort: 8501
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 500m
+              memory: 128Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2026-10-08T14:24:47Z"
+      lastUpdateTime: "2026-10-08T16:49:29Z"
+      message: ReplicaSet "customer-churn-streamlit-b7fb746d5" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    - lastTransitionTime: "2026-10-09T12:45:59Z"
+      lastUpdateTime: "2026-10-09T12:45:59Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    observedGeneration: 4
+    readyReplicas: 1
+    replicas: 1
+    terminatingReplicas: 0
+    updatedReplicas: 1
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"customer-churn-api","namespace":"default"},"spec":{"ports":[{"port":8000,"protocol":"TCP","targetPort":8000}],"selector":{"app":"customer-churn-api"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-10-08T13:32:06Z"
+    name: customer-churn-api
+    namespace: default
+    resourceVersion: "6625"
+    uid: 9cbdc356-526b-4124-913e-4bf5b51a2de8
+  spec:
+    clusterIP: 10.96.29.202
+    clusterIPs:
+    - 10.96.29.202
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 8000
+      protocol: TCP
+      targetPort: 8000
+    selector:
+      app: customer-churn-api
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"customer-churn-streamlit","namespace":"default"},"spec":{"ports":[{"port":8501,"protocol":"TCP","targetPort":8501}],"selector":{"app":"customer-churn-streamlit"},"type":"ClusterIP"}}
+    creationTimestamp: "2026-10-08T14:29:01Z"
+    name: customer-churn-streamlit
+    namespace: default
+    resourceVersion: "20916"
+    uid: 194e4e08-b02a-4d16-be28-7346eefdd828
+  spec:
+    clusterIP: 10.96.35.225
+    clusterIPs:
+    - 10.96.35.225
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - port: 8501
+      protocol: TCP
+      targetPort: 8501
+    selector:
+      app: customer-churn-streamlit
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: "2026-10-08T12:28:11Z"
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "245"
+    uid: 5d6721fe-8a5e-4570-81f5-d2fe80097308
+  spec:
+    clusterIP: 10.96.0.1
+    clusterIPs:
+    - 10.96.0.1
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 6443
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  data:
+    MLFLOW_EXPERIMENT_NAME: customer-churn
+    MODEL_NAME: CustomerChurnModel
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"MLFLOW_EXPERIMENT_NAME":"customer-churn","MODEL_NAME":"CustomerChurnModel"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app":"customer-churn-config"},"name":"customer-churn-config","namespace":"default"}}
+    creationTimestamp: "2026-10-08T13:03:28Z"
+    labels:
+      app: customer-churn-config
+    name: customer-churn-config
+    namespace: default
+    resourceVersion: "3860"
+    uid: 48c4c84a-43ed-4950-b943-df934cdc1388
+- apiVersion: v1
+  data:
+    PREDICTION_API_URL: http://customer-churn-api:8000/predict
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"PREDICTION_API_URL":"http://customer-churn-api:8000/predict"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"customer-churn-streamlit-config","namespace":"default"}}
+    creationTimestamp: "2026-10-08T14:15:24Z"
+    name: customer-churn-streamlit-config
+    namespace: default
+    resourceVersion: "10505"
+    uid: dfc432e4-ce80-4f8a-9095-f26384cd40f0
+- apiVersion: v1
+  data:
+    ca.crt: |
+      -----BEGIN CERTIFICATE-----
+      MIIDBTCCAe2gAwIBAgIIehEI4bQ3prswDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+      AxMKa3ViZXJuZXRlczAeFw0yNjEwMDgxMjIzMDBaFw0zNjEwMDUxMjI4MDBaMBUx
+      EzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+      AoIBAQCb9YbWLGsdSqMPNTwrqF6iIe8iuyiWb2D+NsphC3/qpw1PmQ2kuIr4PFMm
+      uf+NgZu6URXmfYabyybTxcEWdW8v/44LuVlalHEkYTj1qzK38OJJgqSsPng69XLJ
+      WEPP4oTv/2pqAyMReovcURqbubekPo9DppbNDw4V2xeFOOFWUZtvZVOsRm6t2qx1
+      SQ/y8E7zlGZ+591uhQb8qn7+K6DfyH2rnUx/jVjGu7f4QC7CT6JawKiBNW10eDke
+      c9JKDgvNyCX0Ml6NG3G9Iu/bN7Df1mlT0PSgI1HW8VujB+kmSjQgEe9g6/3RtsmX
+      dyQl4bh8jy2YVI728wmBIJURb+d/AgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP
+      BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSlmVYtEz/Bz5GQ/wxW+TJywhAF4jAV
+      BgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQB0hJE3bE8B
+      ocd/OkQhqb+rltfySRt7GEnTqwZmKfnKJFg9lkPs/ncDao+woGJSiAGHxCa+XTfP
+      DyZ6g9rG9XjGHAFYWfoHKHUvrhFbsUYcJFl42vwEfXlnA55R7uwGs2LNb86BAc+J
+      /1pHeYusVyEjZRHRDjF3q1WB2tqhiT7nG0/4KCYWhzsoH3MeDEYgrN/43d7qHX2/
+      kStHX5gFDPcaadbWO4hseIXkLXPWMxGl6PvJK09CJi2qLzkzt5Xjdt60Ea7ZhTAq
+      CqmCjJDtdxvKjo7wBmoq5GbcQXjwoi8VrTdzZ/AscuSzNnYVV/wwEM1060D+bOgM
+      sodNWwZ321cB
+      -----END CERTIFICATE-----
+  kind: ConfigMap
+  metadata:
+    annotations:
+      kubernetes.io/description: Contains a CA bundle that can be used to verify the
+        kube-apiserver when using internal endpoints such as the internal service
+        IP or kubernetes.default.svc. No other usage is guaranteed across distributions
+        of Kubernetes clusters.
+    creationTimestamp: "2026-10-08T12:28:18Z"
+    name: kube-root-ca.crt
+    namespace: default
+    resourceVersion: "387"
+    uid: 0b9b8525-860a-4cd1-bdaf-02e841e29b01
+- apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{},"labels":{"app.kubernetes.io/name":"customer-churn-ingress"},"name":"customer-churn-ingress","namespace":"default"},"spec":{"ingressClassName":"nginx","rules":[{"http":{"paths":[{"backend":{"service":{"name":"customer-churn-streamlit","port":{"number":8501}}},"path":"/","pathType":"Prefix"}]}}]}}
+    creationTimestamp: "2026-10-08T15:50:50Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/name: customer-churn-ingress
+    name: customer-churn-ingress
+    namespace: default
+    resourceVersion: "27077"
+    uid: 88d5b499-b44e-433d-9736-4844591deac6
+  spec:
+    ingressClassName: nginx
+    rules:
+    - http:
+        paths:
+        - backend:
+            service:
+              name: customer-churn-streamlit
+              port:
+                number: 8501
+          path: /
+          pathType: Prefix
+  status:
+    loadBalancer:
+      ingress:
+      - ip: 172.19.0.2
+kind: List
+metadata:
+  resourceVersion: ""
