@@ -1,0 +1,30 @@
+name: self-hosted Runner Check
+
+on: 
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  check-runner:
+    runs-on:
+      [self-hosted, windows, X64]
+    steps:
+      - name: Check Runner identity
+        shell: powershell
+        run: |
+          Write-Host "Runner user:"
+          whoami
+          Write-Host "Runner workspace:"
+          Write-Host $env:GITHUB_WORKSPACE
+      - name: Check Kubectl
+        shell: powershell
+        run: |
+          kubectl version --client
+          kubectl config current-context
+          kubectl get nodes
+      - name: Check Helm
+        shell: powershell
+        run: |
+          helm version
+          helm list
