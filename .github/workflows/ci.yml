@@ -12,7 +12,7 @@ permissions:
   packages: write
 
 jobs:
-  test:
+  validate-and-build:
     environment: development
 
     env:
@@ -50,7 +50,7 @@ jobs:
 
   publish-images:
     name: Publish Docker Images to GHCR
-    needs: test
+    needs: validate-and-build
     environment: development
     runs-on: ubuntu-latest
 
@@ -85,7 +85,7 @@ jobs:
             .
 
       - name: Scan API Image with Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
           format: table
@@ -95,7 +95,7 @@ jobs:
           exit-code: '1'
 
       - name: Scan Streamlit Image with Trivy
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
           format: table
