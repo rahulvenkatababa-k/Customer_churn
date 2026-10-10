@@ -80,36 +80,15 @@ jobs:
             -t ghcr.io/rahulvenkatababa-k/customer-churn-api:${GITHUB_SHA} \
             -t ghcr.io/rahulvenkatababa-k/customer-churn-api:latest \
             .
-      # - name: Build Streamlit Image
-      #   run: |
-      #     docker build \
-      #       -f Dockerfile.streamlit \
-      #       -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA} \
-      #       -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest \
-            # .
-      - name: Debug API Image Vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
-          format: table
-          vuln-type: os,library
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '0'
+      - name: Build Streamlit Image
+        run: |
+          docker build \
+            -f Dockerfile.streamlit \
+            -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA} \
+            -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest \
+            .
 
-      # - name: Scan API Image with Trivy
-      #   uses: aquasecurity/trivy-action@v0.36.0
-      #   with:
-      #     image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
-      #     format: sarif
-      #     output: trivy-api-results.sarif
-      #     vuln-type: os,library
-      #     severity: CRITICAL
-      #     limit-severities-for-sarif: true
-      #     ignore-unfixed: true
-      #     exit-code: '1'
-
-      - name: Duplicate Scan API Image with Trivy
+      - name: Scan API Image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
@@ -117,8 +96,8 @@ jobs:
           output: trivy-api-results.sarif
           vuln-type: os,library
           severity: CRITICAL
-          ignore-unfixed: true
           limit-severities-for-sarif: true
+          ignore-unfixed: true
           exit-code: '0'
 
       - name: Upload API Scan Results to Github
@@ -128,44 +107,34 @@ jobs:
           sarif_file: trivy-api-results.sarif
           category: trivy-api
 
-      # - name: Debug Streamlit Image Vulnerabilities
-      #   uses: aquasecurity/trivy-action@v0.36.0
-      #   with:
-      #     image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
-      #     format: table
-      #     vuln-type: os,library
-      #     severity: CRITICAL
-      #     ignore-unfixed: true
-      #     exit-code: '0'
+      - name: Scan Streamlit Image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
+          format: sarif
+          output: trivy-streamlit-results.sarif
+          vuln-type: os,library
+          severity: CRITICAL
+          limit-severities-for-sarif: true
+          ignore-unfixed: true
+          exit-code: '1'
 
-      # - name: Scan Streamlit Image with Trivy
-      #   uses: aquasecurity/trivy-action@v0.36.0
-      #   with:
-      #     image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
-      #     format: sarif
-      #     output: trivy-streamlit-results.sarif
-      #     vuln-type: os,library
-      #     severity: CRITICAL
-      #     limit-severities-for-sarif: true
-      #     ignore-unfixed: true
-      #     exit-code: '1'
-
-      # - name: Upload Streamlit Scan Results to Github
-      #   if: always() && hashFiles('trivy-streamlit-results.sarif') != ''
-      #   uses: github/codeql-action/upload-sarif@v4
-      #   with:
-      #     sarif_file: trivy-streamlit-results.sarif
-      #     category: trivy-streamlit
+      - name: Upload Streamlit Scan Results to Github
+        if: always() && hashFiles('trivy-streamlit-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-streamlit-results.sarif
+          category: trivy-streamlit
 
       - name: Push API IMAGE
         run: |
           docker push ghcr.io/rahulvenkatababa-k/customer-churn-api:${GITHUB_SHA}
           docker push ghcr.io/rahulvenkatababa-k/customer-churn-api:latest
 
-      # - name: Push Streamlit Image
-      #   run: |
-      #     docker push ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA}
-      #     docker push ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest
+      - name: Push Streamlit Image
+        run: |
+          docker push ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA}
+          docker push ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest
 
       - name: Log Out from GitHub Container Registry
         if: always()
