@@ -7,6 +7,8 @@ on:
   # pull_request:
   #   branches:
   #     - main
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -20,6 +22,7 @@ jobs:
       POSTGRES_SQL_URI: ${{ secrets.POSTGRES_SQL_URI }}
       MODEL_NAME: ${{ secrets.MODEL_NAME}}
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,5 +41,57 @@ jobs:
       - name: Run Tests
         run: pytest -v tests/
 
-      - name: Build Docker Image
-        run: docker build -t customer_churn:test .
+      - name: Build API Docker Image
+        run: docker build -f Dockerfile -t customer-churn-api:test .
+
+      - name: Build Streamlit Docker Image
+        run: docker build -f Dockerfile.streamlit -t customer-churn-streamlit:test .
+
+  publish-images:
+    name: Publish Docker Images to GHCR
+    needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Login to Github GHCR
+        env:
+          REGISTRY_USERNAME: ${{github.actor}}
+          REGISTRY_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+          echo "$REGISTRY_TOKEN" | docker login ghcr.io \
+            --username "$REGISTRY_USERNAME" \
+            --password-stdin
+      - name: Build API Image
+        run: |
+          docker build \
+            -f Dockerfile \
+            -t ghcr.io/rahulvenkatababa-k/customer-churn-api:${GITHUB_SHA} \
+            -t ghcr.io/rahulvenkatababa-k/customer-churn-api:latest \
+            .
+      - name: Build Streamlit Image
+        run: |
+          docker build \
+            -f Dockerfile.streamlit \
+            -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA} \
+            -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest \
+            .
+      - name: Push API IMAGE
+        run: |
+          docker push ghcr.io/rahulvenkatababa-k/customer-churn-api:${GITHUB_SHA}
+          docker push ghcr.io/rahulvenkatababa-k/customer-churn-api:latest
+
+      - name: Push Streamlit Image
+        run: |
+          docker push ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA}
+          docker push ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest
+
+      - name: Log Out from GitHub Container Registry
+        if: always()
+        run: |
+          docker logout ghcr.io
