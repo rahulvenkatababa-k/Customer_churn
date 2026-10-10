@@ -84,7 +84,7 @@ jobs:
       #       -f Dockerfile.streamlit \
       #       -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA} \
       #       -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest \
-            .
+            # .
       - name: Debug API Image Vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
