@@ -21,7 +21,7 @@ jobs:
                   ref: ${{ github.event.workflow_run.head_sha }}
 
             - name: Deploy With Helm
-              shell: powershell
+              shell: powershell -ExecutionPolicy Bypass -File "{0}"
               env:
                 IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
               run: |
@@ -29,7 +29,7 @@ jobs:
                 $kubeconfig = "C:\Users\lokes\.kube\config"
 
                 & $helm --kubeconfig $kubeconfig upgrade --install customer-churn helm/customer-churn `
-                    --namespace deafult `
+                    --namespace default `
                     --wait `
                     --timeout 5m `
                     --set-string "api.image.tag=$env:IMAGE_TAG" `
