@@ -62,7 +62,7 @@ jobs:
       - name: Login to Github GHCR
         env:
           REGISTRY_USERNAME: ${{github.actor}}
-          REGISTRY_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          REGISTRY_TOKEN: ${{secrets.GITHUB_PAT}}
         run: |
           echo "$REGISTRY_TOKEN" | docker login ghcr.io \
             --username "$REGISTRY_USERNAME" \
