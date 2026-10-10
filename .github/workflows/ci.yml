@@ -83,6 +83,27 @@ jobs:
             -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA} \
             -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest \
             .
+
+      - name: Scan API Image with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Scan Streamlit Image with Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
+          format: table
+          vuln-type: os, library
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
       - name: Push API IMAGE
         run: |
           docker push ghcr.io/rahulvenkatababa-k/customer-churn-api:${GITHUB_SHA}
