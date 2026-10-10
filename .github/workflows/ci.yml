@@ -111,10 +111,12 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
+          format: sarif
           output: trivy-api-results.sarif
           vuln-type: os,library
           severity: CRITICAL
           ignore-unfixed: true
+          limit-severities-for-sarif: true
           exit-code: '0'
 
       - name: Upload API Scan Results to Github
