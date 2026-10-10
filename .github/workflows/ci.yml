@@ -85,6 +85,15 @@ jobs:
             -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${GITHUB_SHA} \
             -t ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest \
             .
+      - name: Debug API Image Vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
 
       - name: Scan API Image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
@@ -97,22 +106,22 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
 
-      - name: Debug API Image Vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-api:${{ github.sha }}
-          format: table
-          vuln-type: os,library
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '0'
-
       - name: Upload API Scan Results to Github
         if: always() && hashFiles('trivy-api-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-api-results.sarif
           category: trivy-api
+
+      - name: Debug Streamlit Image Vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
 
       - name: Scan Streamlit Image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
@@ -124,16 +133,6 @@ jobs:
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: '1'
-
-      - name: Debug Streamlit Image Vulnerabilities
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
-          format: table
-          vuln-type: os,library
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: '0'
 
       - name: Upload Streamlit Scan Results to Github
         if: always() && hashFiles('trivy-streamlit-results.sarif') != ''
