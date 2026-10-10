@@ -99,7 +99,7 @@ jobs:
         with:
           image-ref: ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:${{ github.sha }}
           format: table
-          vuln-type: os, library
+          vuln-type: os,library
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: '1'
