@@ -9,7 +9,8 @@ spec:
     selector:
         app: customer-churn-api
     ports:
-        - protocol: TCP
+        - name: http
+          protocol: TCP
           port: {{.Values.api.service.port}}
           targetPort: 8000
           

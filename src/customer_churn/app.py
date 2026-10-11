@@ -2,13 +2,16 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import pandas as pd
 from src.customer_churn.components.prediction import Prediction
+from prometheus_fastapi_instrumentator import Instrumentator
+
+
 
 app = FastAPI(
     title="Customer Churn Prediction API 🛒",
     description="API for predicting Customer Churn",
     version="1.0.0"
 )
-
+Instrumentator().instrument(app=app).expose(app=app, endpoint="/metrics")
 @app.get("/")
 def root():
     return {

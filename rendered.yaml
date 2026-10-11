@@ -1,0 +1,199 @@
+---
+# Source: customer-churn/templates/api-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: customer-churn-config
+data:
+  MLFLOW_EXPERIMENT_NAME: customer-churn
+  MODEL_NAME: CustomerChurnModel
+
+---
+# Source: customer-churn/templates/streamlit-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: customer-churn-streamlit-config
+data:
+  PREDICTION_API_URL: http://customer-churn-api:8000/predict
+
+---
+# Source: customer-churn/templates/api-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+    name: customer-churn-api
+    labels:
+        app: customer-churn-api
+spec:
+    type: ClusterIP
+    selector:
+        app: customer-churn-api
+    ports:
+        - name: http
+          protocol: TCP
+          port: 8000
+          targetPort: 8000
+          
+---
+# Source: customer-churn/templates/streamlit-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-churn-streamlit
+  labels:
+    app: customer-churn-streamlit
+spec:
+  type: ClusterIP
+  selector:
+    app: customer-churn-streamlit
+  ports:
+    - protocol: TCP
+      port: 8501
+      targetPort: 8501
+
+---
+# Source: customer-churn/templates/api-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-churn-api
+  labels:
+    app: customer-churn-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: customer-churn-api
+  template:
+    metadata:
+      labels:
+        app: customer-churn-api
+    spec:
+      containers:
+        - name: customer-churn-api
+          image: "ghcr.io/rahulvenkatababa-k/customer-churn-api:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: customer-churn-config
+            - secretRef:
+                name: customer-churn-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+---
+# Source: customer-churn/templates/streamlit-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-churn-streamlit
+  labels:
+    app: customer-churn-streamlit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customer-churn-streamlit
+  template:
+    metadata:
+      labels:
+        app: customer-churn-streamlit
+    spec:
+      containers:
+        - name: customer-churn-streamlit
+          image: "ghcr.io/rahulvenkatababa-k/customer-churn-streamlit:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          envFrom:
+            - configMapRef:
+                name: customer-churn-streamlit-config
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3          
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "128Mi"
+
+---
+# Source: customer-churn/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: customer-churn-ingress
+  labels:
+    app.kubernetes.io/name: customer-churn
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: customer-churn-streamlit
+                port:
+                  number: 8501
+
+---
+# Source: customer-churn/templates/api-servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: customer-churn-api
+  labels:
+    release: monitoring
+    app: customer-churn-api
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: customer-churn-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

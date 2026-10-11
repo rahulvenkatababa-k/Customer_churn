@@ -8,3 +8,4 @@ catboost
 mlflow
 truststore
 python-dotenv
+prometheus-fastapi-instrumentator
