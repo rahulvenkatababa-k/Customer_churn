@@ -31,11 +31,14 @@ class ModelTrainerArtifact:
     candidate_model_paths: dict[str, str]
     experiment_results_path: str
 
+
 @dataclass
 class ModelEvaluationArtifact:
     evaluation_report_file_path: str
-    confusion_matrix_file_paths : dict[str, str]
+    confusion_matrix_file_paths: dict[str, str]
     registered_model_uri: str
+    reference_data_path: str
+
 
 @dataclass
 class ModelPusherArtifact:

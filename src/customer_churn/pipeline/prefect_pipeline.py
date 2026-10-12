@@ -6,7 +6,6 @@ from src.customer_churn.pipeline.training_pipeline import TrainingPipeline
 from src.customer_churn.exception.exception import CustomerChurnException
 from src.customer_churn.logging.logger import logger
 
-
 @task(
     name="Data Ingestion",
     retries=3,
@@ -97,7 +96,6 @@ def model_pusher(
     return pipeline.start_model_pusher(
         model_evaluation_artifact=model_evaluation_artifact
     )
-
 
 @flow(name="customer-churn-training-pipeline")
 def customer_churn_training_flow():

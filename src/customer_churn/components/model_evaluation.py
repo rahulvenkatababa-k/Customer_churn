@@ -316,10 +316,11 @@ class ModelEvaluation:
             )
 
             return ModelEvaluationArtifact(
-                evaluation_report_file_path=save_report,
-                confusion_matrix_file_paths=save_cm,
-                registered_model_uri=model_uri,
-            )
+            evaluation_report_file_path=save_report,
+            confusion_matrix_file_paths=save_cm,
+            registered_model_uri=model_uri,
+            reference_data_path=self.feature_engineering_artifact.X_train_path,
+        )
 
         except Exception as e:
             logger.error("%s", e)
