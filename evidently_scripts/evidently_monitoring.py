@@ -9,28 +9,40 @@ from evidently.presets import DataDriftPreset
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 
-artifact_runs = sorted(
-    (
-        path
-        for path in ARTIFACTS_DIR.iterdir()
-        if path.is_dir()
-        and (path / "feature_engineering" / "engineered" / "X_train.csv").is_file()
-        and (path / "feature_engineering" / "engineered" / "X_test.csv").is_file()
-    ),
-    key=lambda path: path.stat().st_mtime,
-    reverse=True,
-)
 
-if not artifact_runs:
-    raise FileNotFoundError(
-        "No artifact run containing engineered X_train.csv and X_test.csv was found."
+def get_default_artifact_dir() -> Path:
+    if not ARTIFACTS_DIR.is_dir():
+        raise FileNotFoundError(
+            f"Artifacts directory not found: {ARTIFACTS_DIR}"
+        )
+
+    artifact_runs = sorted(
+        (
+            path
+            for path in ARTIFACTS_DIR.iterdir()
+            if path.is_dir()
+            and (
+                path / "feature_engineering" / "engineered" / "X_train.csv"
+            ).is_file()
+            and (
+                path / "feature_engineering" / "engineered" / "X_test.csv"
+            ).is_file()
+        ),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
     )
 
-DEFAULT_ARTIFACT_DIR = (
-    artifact_runs[0] / "feature_engineering" / "engineered"
-)
+    if not artifact_runs:
+        raise FileNotFoundError(
+            "No artifact run containing engineered X_train.csv "
+            "and X_test.csv was found."
+        )
+
+    return artifact_runs[0] / "feature_engineering" / "engineered"
+
 
 DEFAULT_REPORT_PATH = (
     PROJECT_ROOT
@@ -86,14 +98,14 @@ def main() -> None:
     parser.add_argument(
         "--reference",
         type=Path,
-        default=DEFAULT_ARTIFACT_DIR / "X_train.csv",
+        default=None,
         help="Reference dataset CSV path.",
     )
 
     parser.add_argument(
         "--current",
         type=Path,
-        default=DEFAULT_ARTIFACT_DIR / "X_test.csv",
+        default=None,
         help="Current dataset CSV path.",
     )
 
@@ -106,9 +118,27 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    default_artifact_dir = (
+        get_default_artifact_dir()
+        if args.reference is None or args.current is None
+        else None
+        )
+
+    reference_path = (
+        args.reference
+        if args.reference is not None
+        else default_artifact_dir / "X_train.csv"
+    )
+
+    current_path = (
+        args.current
+        if args.current is not None
+        else default_artifact_dir / "X_test.csv"
+    )
+
     generate_drift_report(
-        reference_path=args.reference,
-        current_path=args.current,
+        reference_path=reference_path,
+        current_path=current_path,
         report_path=args.output,
     )
 
