@@ -28,3 +28,4 @@ ipykernel
 certifi
 truststore
 prometheus-fastapi-instrumentator
+evidently
