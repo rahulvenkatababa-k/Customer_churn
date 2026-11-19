@@ -550,18 +550,6 @@ Import `monitoring/grafana/customer-churn-dashboard.json` into Grafana. See [`cm
 
 ---
 
-## 14. Current Scope and Known Gaps
-
-Stated plainly so the repository is easy to evaluate:
-
-- **Terraform** — the `terraform/` module layout (storage, container registry, IAM, deployment) is scaffolded, but the files are currently empty. No cloud infrastructure is defined yet.
-- **Deployment target** — CD deploys to a local Docker Desktop Kubernetes cluster through a self-hosted Windows runner; there is no managed-cloud deployment in the repo.
-- **Scheduling** — the training and monitoring flows are Prefect flows, but `prefect.yaml` is empty, so no deployment schedule is defined in the repository.
-- **Secrets** — `k8s/api-secrets.yaml` is a manifest for `customer-churn-secrets`; keep only placeholders in version control and supply real values out-of-band (for example with `kubectl create secret`, as shown above).
-- **Tests** — `tests/unit/test_model_registry.py` is an empty placeholder; the API (`app.py`) and Streamlit app do not yet have dedicated tests.
-- **Housekeeping** — `setup_project.py` is a scaffolding script that still carries templates from an earlier project, and a few root-level `test*.py` files are empty.
-
----
 
 <div align="center">
 
